@@ -1257,44 +1257,69 @@ public:
 		return popcount(final);
 	}
 	
-	/*
-	e1x2: edge+2x
-	c52: ed_cor2*5
-	c33: ed_cor3*3
-	e2: line2
-	e3: line3
-	e4: line4
-	k8, k7, k6, k5, k4: / 
-	wb: const 
-	wodd: parity
-	wmob: mobibity
-	*/
-	struct CoeffPack
+	const int pow3[13]={1,3,9,27,81,243,729,2187,6561,19683,59049,177147,531441};
+
+void readShort(FILE *stream, short &tar)
+{
+	fread(&tar, 2, 1, stream);
+}
+
+void writeShort(FILE *stream, short tar)
+{
+	fwrite(&tar, 2, 1, stream);
+}
+/*
+e1x2: edge+2x
+c52: ed_cor2*5
+c33: ed_cor3*3
+e2: line2
+e3: line3
+e4: line4
+k8, k7, k6, k5, k4: / 
+wb: const 
+wodd: parity
+wmob: mobibity
+*/
+struct CoeffPack
+{
+	short e1[59049], c52[59049], c33[19683],
+		e2[6561], e3[6561], e4[6561], k8[6561], k7[2187], k6[729], k5[243], k4[81],
+		wb, wodd, wmob;
+	
+	void clear()
 	{
-		short e1[59049], c52[59049], c33[19683],
-		 e2[6561], e3[6561], e4[6561], k8[6561], k7[2187], k6[729], k5[243], k4[81],
-		  wb, wodd, wmob;
-	}pdata[12];
+		wb=wodd=wmob=0;
+		for (int j=0;j<59049;j++)
+			e1[j]=c52[j]=0;
+		for (int j=0;j<19683;j++)
+			c33[j]=0;
+		for (int j=0;j<6561;j++)
+			e2[j]=e3[j]=e4[j]=k8[j]=0;
+		for (int j=0;j<2187;j++)
+			k7[j]=0;
+		for (int j=0;j<729;j++)
+			k6[j]=0;
+		for (int j=0;j<243;j++)
+			k5[j]=0;
+		for (int j=0;j<81;j++)
+			k4[j]=0;
+	}
+};
+
+struct GameCoeff
+{
+	
+	#define COEFF_PARTCNT 11
+	CoeffPack dat[COEFF_PARTCNT];
 	
 	#define EVAL_FILE "reversicoeff.bin"
-	//#define EVAL_FILE "trained11_13.bin"
-	
-	void readShort(FILE *stream, short &tar)
-	{
-		fread(&tar, 2, 1, stream);
-	}
-	
-	void writeShort(FILE *stream, short tar)
-	{
-		fwrite(&tar, 2, 1, stream);
-	}
-	
-	int pow3[13]={1,3,9,27,81,243,729,2187,6561,19683,59049,177147,531441};
+	#define EVAL_FILE_S "reversicoeff_temp.bin"
 	
 	void initPtnData()
 	{
 		FILE *eval_stream=fopen(EVAL_FILE, "rb");
 		short part_cnt; readShort(eval_stream, part_cnt);
+		assert(part_cnt == COEFF_PARTCNT);
 		for (int i=0;i<part_cnt;i++)
 		{
 			readShort(eval_stream,pdata[i].wb);
@@ -1328,6 +1353,55 @@ public:
 		fclose(eval_stream);
 	}
 	
+	void savePtnData()
+	{
+		FILE *eval_stream=fopen(EVAL_FILE_S, "wb");
+		short part_cnt=COEFF_PARTCNT; writeShort(eval_stream, part_cnt);
+		for (int i=0;i<part_cnt;i++)
+		{
+			writeShort(eval_stream,pdata[i].wb);
+			writeShort(eval_stream,pdata[i].wodd);
+			writeShort(eval_stream,pdata[i].wmob);
+			for (int j=0;j<59049;j++)
+				writeShort(eval_stream,pdata[i].e1[j]);
+			for (int j=0;j<59049;j++)
+				writeShort(eval_stream,pdata[i].c52[j]);
+			for (int j=0;j<19683;j++)
+				writeShort(eval_stream,pdata[i].c33[j]);
+			for (int j=0;j<6561;j++)
+				writeShort(eval_stream,pdata[i].e2[j]);
+			for (int j=0;j<6561;j++)
+				writeShort(eval_stream,pdata[i].e3[j]);
+			for (int j=0;j<6561;j++)
+				writeShort(eval_stream,pdata[i].e4[j]);
+			for (int j=0;j<6561;j++)
+				writeShort(eval_stream,pdata[i].k8[j]);
+			for (int j=0;j<2187;j++)
+				writeShort(eval_stream,pdata[i].k7[j]);
+			for (int j=0;j<729;j++)
+				writeShort(eval_stream,pdata[i].k6[j]);
+			for (int j=0;j<243;j++)
+				writeShort(eval_stream,pdata[i].k5[j]);
+			for (int j=0;j<81;j++)
+				writeShort(eval_stream,pdata[i].k4[j]);
+			cout<<pdata[i].wb<<'\n';
+			cout<<pdata[i].k4[80]<<'\n';
+		}
+		fclose(eval_stream);
+	}
+	
+	void clear()
+	{
+		for (int i=0;i<part_cnt;i++)
+			pdata[i].clear();
+	}
+	
+	const int Eval_PrTable[61]=
+		{-1,-1,0,0,0,1,1,1,2,2,2,3,3,3,4,4,4,4,5,5,5,5,6,6,6,6,
+		6,7,7,7,7,7,8,8,8,8,8,8,9,9,9,9,9,9,10,10,10,10,
+		10,10,10,10,10,10,10,10,10,10,10,10,10}; 
+	}coeff_data;
+	
 	int Cmp_BW::getMob(Map &map, Col col)
 	{
 		int ret = 0;
@@ -1336,10 +1410,7 @@ public:
 				ret++;
 		return ret;
 	}
-	int Eval_PrTable[61]=
-	{-1,-1,0,0,0,1,1,1,2,2,2,3,3,3,4,4,4,4,5,5,5,5,6,6,6,6,
-	6,7,7,7,7,7,8,8,8,8,8,8,9,9,9,9,9,9,10,10,10,10,
-	10,10,10,10,10,10,10,10,10,10,10,10,10}; 
+	
 	int Cmp_BW::evalPtn(Map &map, Col col)
 	{
 		Bit cnt[3];
@@ -1863,284 +1934,287 @@ public:
 
 namespace LinReg
 {
+GameCoeff rweight;
 int ptne1[4][10],ptne2[4][8],ptne3[4][8],ptne4[4][8],ptnk8[2][8],ptnk7[4][7],ptnk6[4][6],ptnk5[4][5],ptnk4[4][4];
 int ptne1_[4][10],ptne2_[4][8],ptne3_[4][8],ptne4_[4][8],ptnk8_[2][8],ptnk7_[4][7],ptnk6_[4][6],ptnk5_[4][5],ptnk4_[4][4];
 
+int mm[8][8];
+
 void getptns(int num)
 {
-	ptne1[0][0]=mm[num][0][0];
-	ptne1[0][1]=mm[num][1][1];
-	ptne1[0][2]=mm[num][0][1];
-	ptne1[0][3]=mm[num][0][2];
-	ptne1[0][4]=mm[num][0][3];
-	ptne1[0][5]=mm[num][0][4];
-	ptne1[0][6]=mm[num][0][5];
-	ptne1[0][7]=mm[num][0][6];
-	ptne1[0][8]=mm[num][1][6];
-	ptne1[0][9]=mm[num][0][7];
+	ptne1[0][0]=mm[0][0];
+	ptne1[0][1]=mm[1][1];
+	ptne1[0][2]=mm[0][1];
+	ptne1[0][3]=mm[0][2];
+	ptne1[0][4]=mm[0][3];
+	ptne1[0][5]=mm[0][4];
+	ptne1[0][6]=mm[0][5];
+	ptne1[0][7]=mm[0][6];
+	ptne1[0][8]=mm[1][6];
+	ptne1[0][9]=mm[0][7];
 	
-	ptne1[1][0]=mm[num][7][0];
-	ptne1[1][1]=mm[num][6][1];
-	ptne1[1][2]=mm[num][7][1];
-	ptne1[1][3]=mm[num][7][2];
-	ptne1[1][4]=mm[num][7][3];
-	ptne1[1][5]=mm[num][7][4];
-	ptne1[1][6]=mm[num][7][5];
-	ptne1[1][7]=mm[num][7][6];
-	ptne1[1][8]=mm[num][6][6];
-	ptne1[1][9]=mm[num][7][7];
+	ptne1[1][0]=mm[7][0];
+	ptne1[1][1]=mm[6][1];
+	ptne1[1][2]=mm[7][1];
+	ptne1[1][3]=mm[7][2];
+	ptne1[1][4]=mm[7][3];
+	ptne1[1][5]=mm[7][4];
+	ptne1[1][6]=mm[7][5];
+	ptne1[1][7]=mm[7][6];
+	ptne1[1][8]=mm[6][6];
+	ptne1[1][9]=mm[7][7];
 
-	ptne1[2][0]=mm[num][0][0];
-	ptne1[2][1]=mm[num][1][1];
-	ptne1[2][2]=mm[num][1][0];
-	ptne1[2][3]=mm[num][2][0];
-	ptne1[2][4]=mm[num][3][0];
-	ptne1[2][5]=mm[num][4][0];
-	ptne1[2][6]=mm[num][5][0];
-	ptne1[2][7]=mm[num][6][0];
-	ptne1[2][8]=mm[num][6][1];
-	ptne1[2][9]=mm[num][7][0];
+	ptne1[2][0]=mm[0][0];
+	ptne1[2][1]=mm[1][1];
+	ptne1[2][2]=mm[1][0];
+	ptne1[2][3]=mm[2][0];
+	ptne1[2][4]=mm[3][0];
+	ptne1[2][5]=mm[4][0];
+	ptne1[2][6]=mm[5][0];
+	ptne1[2][7]=mm[6][0];
+	ptne1[2][8]=mm[6][1];
+	ptne1[2][9]=mm[7][0];
 
-	ptne1[3][0]=mm[num][0][7];
-	ptne1[3][1]=mm[num][1][6];
-	ptne1[3][2]=mm[num][1][7];
-	ptne1[3][3]=mm[num][2][7];
-	ptne1[3][4]=mm[num][3][7];
-	ptne1[3][5]=mm[num][4][7];
-	ptne1[3][6]=mm[num][5][7];
-	ptne1[3][7]=mm[num][6][7];
-	ptne1[3][8]=mm[num][7][6];
-	ptne1[3][9]=mm[num][7][7];
+	ptne1[3][0]=mm[0][7];
+	ptne1[3][1]=mm[1][6];
+	ptne1[3][2]=mm[1][7];
+	ptne1[3][3]=mm[2][7];
+	ptne1[3][4]=mm[3][7];
+	ptne1[3][5]=mm[4][7];
+	ptne1[3][6]=mm[5][7];
+	ptne1[3][7]=mm[6][7];
+	ptne1[3][8]=mm[7][6];
+	ptne1[3][9]=mm[7][7];
 
-	ptne2[0][0] = mm[num][1][0];
-	ptne2[0][1] = mm[num][1][1];
-	ptne2[0][2] = mm[num][1][2];
-	ptne2[0][3] = mm[num][1][3];
-	ptne2[0][4] = mm[num][1][4];
-	ptne2[0][5] = mm[num][1][5];
-	ptne2[0][6] = mm[num][1][6];
-	ptne2[0][7] = mm[num][1][7];
+	ptne2[0][0] = mm[1][0];
+	ptne2[0][1] = mm[1][1];
+	ptne2[0][2] = mm[1][2];
+	ptne2[0][3] = mm[1][3];
+	ptne2[0][4] = mm[1][4];
+	ptne2[0][5] = mm[1][5];
+	ptne2[0][6] = mm[1][6];
+	ptne2[0][7] = mm[1][7];
 
-	ptne2[1][0] = mm[num][6][0];
-	ptne2[1][1] = mm[num][6][1];
-	ptne2[1][2] = mm[num][6][2];
-	ptne2[1][3] = mm[num][6][3];
-	ptne2[1][4] = mm[num][6][4];
-	ptne2[1][5] = mm[num][6][5];
-	ptne2[1][6] = mm[num][6][6];
-	ptne2[1][7] = mm[num][6][7];
+	ptne2[1][0] = mm[6][0];
+	ptne2[1][1] = mm[6][1];
+	ptne2[1][2] = mm[6][2];
+	ptne2[1][3] = mm[6][3];
+	ptne2[1][4] = mm[6][4];
+	ptne2[1][5] = mm[6][5];
+	ptne2[1][6] = mm[6][6];
+	ptne2[1][7] = mm[6][7];
 
-	ptne2[2][0] = mm[num][0][1];
-	ptne2[2][1] = mm[num][1][1];
-	ptne2[2][2] = mm[num][2][1];
-	ptne2[2][3] = mm[num][3][1];
-	ptne2[2][4] = mm[num][4][1];
-	ptne2[2][5] = mm[num][5][1];
-	ptne2[2][6] = mm[num][6][1];
-	ptne2[2][7] = mm[num][7][1];
+	ptne2[2][0] = mm[0][1];
+	ptne2[2][1] = mm[1][1];
+	ptne2[2][2] = mm[2][1];
+	ptne2[2][3] = mm[3][1];
+	ptne2[2][4] = mm[4][1];
+	ptne2[2][5] = mm[5][1];
+	ptne2[2][6] = mm[6][1];
+	ptne2[2][7] = mm[7][1];
 
-	ptne2[3][0] = mm[num][0][6];
-	ptne2[3][1] = mm[num][1][6];
-	ptne2[3][2] = mm[num][2][6];
-	ptne2[3][3] = mm[num][3][6];
-	ptne2[3][4] = mm[num][4][6];
-	ptne2[3][5] = mm[num][5][6];
-	ptne2[3][6] = mm[num][6][6];
-	ptne2[3][7] = mm[num][7][6];
+	ptne2[3][0] = mm[0][6];
+	ptne2[3][1] = mm[1][6];
+	ptne2[3][2] = mm[2][6];
+	ptne2[3][3] = mm[3][6];
+	ptne2[3][4] = mm[4][6];
+	ptne2[3][5] = mm[5][6];
+	ptne2[3][6] = mm[6][6];
+	ptne2[3][7] = mm[7][6];
 
-	ptne3[0][0] = mm[num][2][0];
-	ptne3[0][1] = mm[num][2][1];
-	ptne3[0][2] = mm[num][2][2];
-	ptne3[0][3] = mm[num][2][3];
-	ptne3[0][4] = mm[num][2][4];
-	ptne3[0][5] = mm[num][2][5];
-	ptne3[0][6] = mm[num][2][6];
-	ptne3[0][7] = mm[num][2][7];
+	ptne3[0][0] = mm[2][0];
+	ptne3[0][1] = mm[2][1];
+	ptne3[0][2] = mm[2][2];
+	ptne3[0][3] = mm[2][3];
+	ptne3[0][4] = mm[2][4];
+	ptne3[0][5] = mm[2][5];
+	ptne3[0][6] = mm[2][6];
+	ptne3[0][7] = mm[2][7];
 
-	ptne3[1][0] = mm[num][5][0];
-	ptne3[1][1] = mm[num][5][1];
-	ptne3[1][2] = mm[num][5][2];
-	ptne3[1][3] = mm[num][5][3];
-	ptne3[1][4] = mm[num][5][4];
-	ptne3[1][5] = mm[num][5][5];
-	ptne3[1][6] = mm[num][5][6];
-	ptne3[1][7] = mm[num][5][7];
+	ptne3[1][0] = mm[5][0];
+	ptne3[1][1] = mm[5][1];
+	ptne3[1][2] = mm[5][2];
+	ptne3[1][3] = mm[5][3];
+	ptne3[1][4] = mm[5][4];
+	ptne3[1][5] = mm[5][5];
+	ptne3[1][6] = mm[5][6];
+	ptne3[1][7] = mm[5][7];
 
-	ptne3[2][0] = mm[num][0][2];
-	ptne3[2][1] = mm[num][1][2];
-	ptne3[2][2] = mm[num][2][2];
-	ptne3[2][3] = mm[num][3][2];
-	ptne3[2][4] = mm[num][4][2];
-	ptne3[2][5] = mm[num][5][2];
-	ptne3[2][6] = mm[num][6][2];
-	ptne3[2][7] = mm[num][7][2];
+	ptne3[2][0] = mm[0][2];
+	ptne3[2][1] = mm[1][2];
+	ptne3[2][2] = mm[2][2];
+	ptne3[2][3] = mm[3][2];
+	ptne3[2][4] = mm[4][2];
+	ptne3[2][5] = mm[5][2];
+	ptne3[2][6] = mm[6][2];
+	ptne3[2][7] = mm[7][2];
 
-	ptne3[3][0] = mm[num][0][5];
-	ptne3[3][1] = mm[num][1][5];
-	ptne3[3][2] = mm[num][2][5];
-	ptne3[3][3] = mm[num][3][5];
-	ptne3[3][4] = mm[num][4][5];
-	ptne3[3][5] = mm[num][5][5];
-	ptne3[3][6] = mm[num][6][5];
-	ptne3[3][7] = mm[num][7][5];
+	ptne3[3][0] = mm[0][5];
+	ptne3[3][1] = mm[1][5];
+	ptne3[3][2] = mm[2][5];
+	ptne3[3][3] = mm[3][5];
+	ptne3[3][4] = mm[4][5];
+	ptne3[3][5] = mm[5][5];
+	ptne3[3][6] = mm[6][5];
+	ptne3[3][7] = mm[7][5];
 
-	ptne4[0][0] = mm[num][3][0];
-	ptne4[0][1] = mm[num][3][1];
-	ptne4[0][2] = mm[num][3][2];
-	ptne4[0][3] = mm[num][3][3];
-	ptne4[0][4] = mm[num][3][4];
-	ptne4[0][5] = mm[num][3][5];
-	ptne4[0][6] = mm[num][3][6];
-	ptne4[0][7] = mm[num][3][7];
+	ptne4[0][0] = mm[3][0];
+	ptne4[0][1] = mm[3][1];
+	ptne4[0][2] = mm[3][2];
+	ptne4[0][3] = mm[3][3];
+	ptne4[0][4] = mm[3][4];
+	ptne4[0][5] = mm[3][5];
+	ptne4[0][6] = mm[3][6];
+	ptne4[0][7] = mm[3][7];
 
-	ptne4[1][0] = mm[num][4][0];
-	ptne4[1][1] = mm[num][4][1];
-	ptne4[1][2] = mm[num][4][2];
-	ptne4[1][3] = mm[num][4][3];
-	ptne4[1][4] = mm[num][4][4];
-	ptne4[1][5] = mm[num][4][5];
-	ptne4[1][6] = mm[num][4][6];
-	ptne4[1][7] = mm[num][4][7];
+	ptne4[1][0] = mm[4][0];
+	ptne4[1][1] = mm[4][1];
+	ptne4[1][2] = mm[4][2];
+	ptne4[1][3] = mm[4][3];
+	ptne4[1][4] = mm[4][4];
+	ptne4[1][5] = mm[4][5];
+	ptne4[1][6] = mm[4][6];
+	ptne4[1][7] = mm[4][7];
 
-	ptne4[2][0] = mm[num][0][3];
-	ptne4[2][1] = mm[num][1][3];
-	ptne4[2][2] = mm[num][2][3];
-	ptne4[2][3] = mm[num][3][3];
-	ptne4[2][4] = mm[num][4][3];
-	ptne4[2][5] = mm[num][5][3];
-	ptne4[2][6] = mm[num][6][3];
-	ptne4[2][7] = mm[num][7][3];
+	ptne4[2][0] = mm[0][3];
+	ptne4[2][1] = mm[1][3];
+	ptne4[2][2] = mm[2][3];
+	ptne4[2][3] = mm[3][3];
+	ptne4[2][4] = mm[4][3];
+	ptne4[2][5] = mm[5][3];
+	ptne4[2][6] = mm[6][3];
+	ptne4[2][7] = mm[7][3];
 
-	ptne4[3][0] = mm[num][0][4];
-	ptne4[3][1] = mm[num][1][4];
-	ptne4[3][2] = mm[num][2][4];
-	ptne4[3][3] = mm[num][3][4];
-	ptne4[3][4] = mm[num][4][4];
-	ptne4[3][5] = mm[num][5][4];
-	ptne4[3][6] = mm[num][6][4];
-	ptne4[3][7] = mm[num][7][4];
+	ptne4[3][0] = mm[0][4];
+	ptne4[3][1] = mm[1][4];
+	ptne4[3][2] = mm[2][4];
+	ptne4[3][3] = mm[3][4];
+	ptne4[3][4] = mm[4][4];
+	ptne4[3][5] = mm[5][4];
+	ptne4[3][6] = mm[6][4];
+	ptne4[3][7] = mm[7][4];
 
-	ptnk8[0][0] = mm[num][0][0];
-	ptnk8[0][1] = mm[num][1][1];
-	ptnk8[0][2] = mm[num][2][2];
-	ptnk8[0][3] = mm[num][3][3];
-	ptnk8[0][4] = mm[num][4][4];
-	ptnk8[0][5] = mm[num][5][5];
-	ptnk8[0][6] = mm[num][6][6];
-	ptnk8[0][7] = mm[num][7][7];
+	ptnk8[0][0] = mm[0][0];
+	ptnk8[0][1] = mm[1][1];
+	ptnk8[0][2] = mm[2][2];
+	ptnk8[0][3] = mm[3][3];
+	ptnk8[0][4] = mm[4][4];
+	ptnk8[0][5] = mm[5][5];
+	ptnk8[0][6] = mm[6][6];
+	ptnk8[0][7] = mm[7][7];
 
-	ptnk8[1][0] = mm[num][0][7];
-	ptnk8[1][1] = mm[num][1][6];
-	ptnk8[1][2] = mm[num][2][5];
-	ptnk8[1][3] = mm[num][3][4];
-	ptnk8[1][4] = mm[num][4][3];
-	ptnk8[1][5] = mm[num][5][2];
-	ptnk8[1][6] = mm[num][6][1];
-	ptnk8[1][7] = mm[num][7][0];
+	ptnk8[1][0] = mm[0][7];
+	ptnk8[1][1] = mm[1][6];
+	ptnk8[1][2] = mm[2][5];
+	ptnk8[1][3] = mm[3][4];
+	ptnk8[1][4] = mm[4][3];
+	ptnk8[1][5] = mm[5][2];
+	ptnk8[1][6] = mm[6][1];
+	ptnk8[1][7] = mm[7][0];
 
-	ptnk7[0][0] = mm[num][0][1];
-	ptnk7[0][1] = mm[num][1][2];
-	ptnk7[0][2] = mm[num][2][3];
-	ptnk7[0][3] = mm[num][3][4];
-	ptnk7[0][4] = mm[num][4][5];
-	ptnk7[0][5] = mm[num][5][6];
-	ptnk7[0][6] = mm[num][6][7];
+	ptnk7[0][0] = mm[0][1];
+	ptnk7[0][1] = mm[1][2];
+	ptnk7[0][2] = mm[2][3];
+	ptnk7[0][3] = mm[3][4];
+	ptnk7[0][4] = mm[4][5];
+	ptnk7[0][5] = mm[5][6];
+	ptnk7[0][6] = mm[6][7];
 
-	ptnk7[1][0] = mm[num][1][0];
-	ptnk7[1][1] = mm[num][2][1];
-	ptnk7[1][2] = mm[num][3][2];
-	ptnk7[1][3] = mm[num][4][3];
-	ptnk7[1][4] = mm[num][5][4];
-	ptnk7[1][5] = mm[num][6][5];
-	ptnk7[1][6] = mm[num][7][6];
+	ptnk7[1][0] = mm[1][0];
+	ptnk7[1][1] = mm[2][1];
+	ptnk7[1][2] = mm[3][2];
+	ptnk7[1][3] = mm[4][3];
+	ptnk7[1][4] = mm[5][4];
+	ptnk7[1][5] = mm[6][5];
+	ptnk7[1][6] = mm[7][6];
 
-	ptnk7[2][0] = mm[num][0][6];
-	ptnk7[2][1] = mm[num][1][5];
-	ptnk7[2][2] = mm[num][2][4];
-	ptnk7[2][3] = mm[num][3][3];
-	ptnk7[2][4] = mm[num][4][2];
-	ptnk7[2][5] = mm[num][5][1];
-	ptnk7[2][6] = mm[num][6][0];
+	ptnk7[2][0] = mm[0][6];
+	ptnk7[2][1] = mm[1][5];
+	ptnk7[2][2] = mm[2][4];
+	ptnk7[2][3] = mm[3][3];
+	ptnk7[2][4] = mm[4][2];
+	ptnk7[2][5] = mm[5][1];
+	ptnk7[2][6] = mm[6][0];
 
-	ptnk7[3][0] = mm[num][6][0];
-	ptnk7[3][1] = mm[num][5][1];
-	ptnk7[3][2] = mm[num][4][2];
-	ptnk7[3][3] = mm[num][3][3];
-	ptnk7[3][4] = mm[num][2][4];
-	ptnk7[3][5] = mm[num][1][5];
-	ptnk7[3][6] = mm[num][0][6];
+	ptnk7[3][0] = mm[6][0];
+	ptnk7[3][1] = mm[5][1];
+	ptnk7[3][2] = mm[4][2];
+	ptnk7[3][3] = mm[3][3];
+	ptnk7[3][4] = mm[2][4];
+	ptnk7[3][5] = mm[1][5];
+	ptnk7[3][6] = mm[0][6];
 
-	ptnk6[0][0] = mm[num][0][2];
-	ptnk6[0][1] = mm[num][1][3];
-	ptnk6[0][2] = mm[num][2][4];
-	ptnk6[0][3] = mm[num][3][5];
-	ptnk6[0][4] = mm[num][4][6];
-	ptnk6[0][5] = mm[num][5][7];
+	ptnk6[0][0] = mm[0][2];
+	ptnk6[0][1] = mm[1][3];
+	ptnk6[0][2] = mm[2][4];
+	ptnk6[0][3] = mm[3][5];
+	ptnk6[0][4] = mm[4][6];
+	ptnk6[0][5] = mm[5][7];
 
-	ptnk6[1][0] = mm[num][2][0];
-	ptnk6[1][1] = mm[num][3][1];
-	ptnk6[1][2] = mm[num][4][2];
-	ptnk6[1][3] = mm[num][5][3];
-	ptnk6[1][4] = mm[num][6][4];
-	ptnk6[1][5] = mm[num][7][5];
+	ptnk6[1][0] = mm[2][0];
+	ptnk6[1][1] = mm[3][1];
+	ptnk6[1][2] = mm[4][2];
+	ptnk6[1][3] = mm[5][3];
+	ptnk6[1][4] = mm[6][4];
+	ptnk6[1][5] = mm[7][5];
 	
-	ptnk6[2][0] = mm[num][0][5];
-	ptnk6[2][1] = mm[num][1][4];
-	ptnk6[2][2] = mm[num][2][3];
-	ptnk6[2][3] = mm[num][3][2];
-	ptnk6[2][4] = mm[num][4][1];
-	ptnk6[2][5] = mm[num][5][0];
+	ptnk6[2][0] = mm[0][5];
+	ptnk6[2][1] = mm[1][4];
+	ptnk6[2][2] = mm[2][3];
+	ptnk6[2][3] = mm[3][2];
+	ptnk6[2][4] = mm[4][1];
+	ptnk6[2][5] = mm[5][0];
 	
-	ptnk6[3][0] = mm[num][5][0];
-	ptnk6[3][1] = mm[num][4][1];
-	ptnk6[3][2] = mm[num][3][2];
-	ptnk6[3][3] = mm[num][2][3];
-	ptnk6[3][4] = mm[num][1][4];
-	ptnk6[3][5] = mm[num][0][5];
+	ptnk6[3][0] = mm[5][0];
+	ptnk6[3][1] = mm[4][1];
+	ptnk6[3][2] = mm[3][2];
+	ptnk6[3][3] = mm[2][3];
+	ptnk6[3][4] = mm[1][4];
+	ptnk6[3][5] = mm[0][5];
 
-	ptnk5[0][0] = mm[num][0][3];
-	ptnk5[0][1] = mm[num][1][4];
-	ptnk5[0][2] = mm[num][2][5];
-	ptnk5[0][3] = mm[num][3][6];
-	ptnk5[0][4] = mm[num][4][7];
+	ptnk5[0][0] = mm[0][3];
+	ptnk5[0][1] = mm[1][4];
+	ptnk5[0][2] = mm[2][5];
+	ptnk5[0][3] = mm[3][6];
+	ptnk5[0][4] = mm[4][7];
 	
-	ptnk5[1][0] = mm[num][3][0];
-	ptnk5[1][1] = mm[num][4][1];
-	ptnk5[1][2] = mm[num][5][2];
-	ptnk5[1][3] = mm[num][6][3];
-	ptnk5[1][4] = mm[num][7][4];
+	ptnk5[1][0] = mm[3][0];
+	ptnk5[1][1] = mm[4][1];
+	ptnk5[1][2] = mm[5][2];
+	ptnk5[1][3] = mm[6][3];
+	ptnk5[1][4] = mm[7][4];
 	
-	ptnk5[2][0] = mm[num][0][4];
-	ptnk5[2][1] = mm[num][1][3];
-	ptnk5[2][2] = mm[num][2][2];
-	ptnk5[2][3] = mm[num][3][1];
-	ptnk5[2][4] = mm[num][4][0];
+	ptnk5[2][0] = mm[0][4];
+	ptnk5[2][1] = mm[1][3];
+	ptnk5[2][2] = mm[2][2];
+	ptnk5[2][3] = mm[3][1];
+	ptnk5[2][4] = mm[4][0];
 	
-	ptnk5[3][0] = mm[num][4][0];
-	ptnk5[3][1] = mm[num][3][1];
-	ptnk5[3][2] = mm[num][2][2];
-	ptnk5[3][3] = mm[num][1][3];
-	ptnk5[3][4] = mm[num][0][4];
+	ptnk5[3][0] = mm[4][0];
+	ptnk5[3][1] = mm[3][1];
+	ptnk5[3][2] = mm[2][2];
+	ptnk5[3][3] = mm[1][3];
+	ptnk5[3][4] = mm[0][4];
 
-	ptnk4[0][0] = mm[num][0][4];
-	ptnk4[0][1] = mm[num][1][5];
-	ptnk4[0][2] = mm[num][2][6];
-	ptnk4[0][3] = mm[num][3][7];
+	ptnk4[0][0] = mm[0][4];
+	ptnk4[0][1] = mm[1][5];
+	ptnk4[0][2] = mm[2][6];
+	ptnk4[0][3] = mm[3][7];
 	
-	ptnk4[1][0] = mm[num][4][0];
-	ptnk4[1][1] = mm[num][5][1];
-	ptnk4[1][2] = mm[num][6][2];
-	ptnk4[1][3] = mm[num][7][3];
+	ptnk4[1][0] = mm[4][0];
+	ptnk4[1][1] = mm[5][1];
+	ptnk4[1][2] = mm[6][2];
+	ptnk4[1][3] = mm[7][3];
 	
-	ptnk4[2][0] = mm[num][0][3];
-	ptnk4[2][1] = mm[num][1][2];
-	ptnk4[2][2] = mm[num][2][1];
-	ptnk4[2][3] = mm[num][3][0];
+	ptnk4[2][0] = mm[0][3];
+	ptnk4[2][1] = mm[1][2];
+	ptnk4[2][2] = mm[2][1];
+	ptnk4[2][3] = mm[3][0];
 	
-	ptnk4[3][0] = mm[num][3][0];
-	ptnk4[3][1] = mm[num][2][1];
-	ptnk4[3][2] = mm[num][1][2];
-	ptnk4[3][3] = mm[num][0][3];
+	ptnk4[3][0] = mm[3][0];
+	ptnk4[3][1] = mm[2][1];
+	ptnk4[3][2] = mm[1][2];
+	ptnk4[3][3] = mm[0][3];
 }
 
 void getpartner()
@@ -2168,7 +2242,7 @@ void printb(int num)
 {
 	for (int i=0;i<7;i++,cout<<'\n')
 		for (int j=0;j<7;j++)
-			cout<<mm[num][i][j]<<' ';
+			cout<<mm[i][j]<<' ';
 }
 
 float ssig=0,sse=0;
@@ -2188,10 +2262,10 @@ int getOdd(int num)
 {
 	return mcnt[0]%2;
 }
-
+/*
 void valid(int num)
 {
-	mmap.resetByArr(mm[num]); mmap.countPiece(mcnt);
+	mmap.resetByArr(mm); mmap.countPiece(mcnt);
 	//cout<<mmap.toString(); 
 	getptns(num);
 	int pe1[4],pe2[4],pe3[4],pe4[4],pk8[2],pk7[4],pk6[4],pk5[4],pk4[4];
@@ -2230,55 +2304,51 @@ void valid(int num)
 	float mse=(sigma-mval[num])*(sigma-mval[num])/2, delta=mval[num]-sigma;
 	sse+=fabs(delta);
 }
-
+*/
 void updateArg()
 {
 	float ee=le/batch_size;
-
-	for (int i = 0;i < 59049;i++)
-		we1[i] += rwe1[i] * ee;
-	for (int i = 0;i < 6561;i++)
+	for (int k=0;k<COEFF_PACK_SIZE;k++)
 	{
-		we2[i] += rwe2[i] * ee;
-		we3[i] += rwe3[i] * ee;
-		we4[i] += rwe4[i] * ee;
-		wk8[i] += rwk8[i] * ee;
+		CoeffPack &w=coeff_data.pdata[k];
+		CoeffPack &rw=rweight.pdata[k];
+		for (int i = 0;i < 59049;i++)
+			w.e1[i] += rw.e1[i] * ee;
+		for (int i = 0;i < 6561;i++)
+		{
+			w.e2[i] += rw.e2[i] * ee;
+			w.e3[i] += rw.e3[i] * ee;
+			w.e4[i] += rw.e4[i] * ee;
+			w.k8[i] += rw.k8[i] * ee;
+		}
+		for (int i=0;i<2187;i++)
+			w.k7[i] += rw.k7[i] * ee;
+		for (int i=0;i<729;i++)
+			w.k6[i] += rw.k6[i] * ee;
+		for (int i=0;i<243;i++)
+			w.k5[i] += rw.k5[i] * ee;
+		for (int i=0;i<81;i++)
+			w.k4[i] += rw.k4[i] * ee;
+		w.wmob += rw.wmob*ee;
+		w.wodd += rw.wodd*ee;
+		w.wb += rw.wb*ee;
 	}
-	for (int i=0;i<2187;i++)
-		wk7[i] += rwk7[i] * ee;
-	for (int i=0;i<729;i++)
-		wk6[i] += rwk6[i] * ee;
-	for (int i=0;i<243;i++)
-		wk5[i] += rwk5[i] * ee;
-	for (int i=0;i<81;i++)
-		wk4[i] += rwk4[i] * ee;
-	wmob += rwmob*ee;
-	wib += rwib*ee;
-	wb += rwb*ee;
-
-	for (int i=0;i<59049;i++)
-		rwe1[i]=0;
-	for (int i=0;i<6561;i++)
-		rwe2[i]=rwe3[i]=rwe4[i]=rwk8[i]=0;
-	for (int i=0;i<2187;i++)
-		rwk7[i]=0;
-	for (int i=0;i<729;i++)
-		rwk6[i]=0;
-	for (int i=0;i<243;i++)
-		rwk5[i]=0;
-	for (int i=0;i<81;i++)
-		rwk4[i]=0;
-	rwmob=rwib=rwb=0;
+	
+	rw.clear();
 }
 
-void accuGrad(int num)
+void accuGrad(Board mmap)
 {
-	mmap.resetByArr(mm[num]); mmap.countPiece(mcnt);
+	mmap.countPiece(mcnt);
 	//cout<<mmap.toString(); 
 	getptns(num);
 	getpartner();
 	int pe1[4],pe2[4],pe3[4],pe4[4],pk8[2],pk7[4],pk6[4],pk5[4],pk4[4];
 	int pe1_[4], pe2_[4], pe3_[4], pe4_[4], pk8_[2], pk7_[4], pk6_[4], pk5_[4], pk4_[4];
+	
+	
+	CoeffPack &w=coeff_data.pdata[eval_pr];
+	CoeffPack &rw=rweight.pdata[eval_pr];
 	for (int i=0;i<4;i++)
 	{
 		pe1[i] = ptnhash(ptne1[i], 10);
@@ -2305,55 +2375,55 @@ void accuGrad(int num)
 		pk8[i] = ptnhash(ptnk8[i], 8);
 		pk8_[i] = ptnhash(ptnk8_[i], 8);
 	}
-	float sigma=wb;
+	float sigma=w.wb;
 	for (int i=0;i<4;i++)
 	{
-		sigma += we1[pe1[i]];
-		sigma += we2[pe2[i]];
-		sigma += we3[pe3[i]];
-		sigma += we4[pe4[i]];
-		sigma += wk7[pk7[i]];
-		sigma += wk6[pk6[i]];
-		sigma += wk5[pk5[i]];
-		sigma += wk4[pk4[i]];
+		sigma += w.e1[pe1[i]];
+		sigma += w.e2[pe2[i]];
+		sigma += w.e3[pe3[i]];
+		sigma += w.e4[pe4[i]];
+		sigma += w.k7[pk7[i]];
+		sigma += w.k6[pk6[i]];
+		sigma += w.k5[pk5[i]];
+		sigma += w.k4[pk4[i]];
 	}
 	for (int i = 0;i < 2;i++) 
-		sigma += wk8[pk8[i]];
+		sigma += w.k8[pk8[i]];
 	int cmob = getMob(num);
 	int codd = getOdd(num);
-	sigma += wmob*cmob;
-	sigma += wib*codd;
+	sigma += w.wmob*cmob;
+	sigma += w.wodd*codd;
 
 	float mse=(sigma-mval[num])*(sigma-mval[num])/2, delta=mval[num]-sigma;
 	sse+=fabs(delta);
 	for (int i=0;i<4;i++)
 	{
-		rwe1[pe1[i]]+=delta;
-		rwe2[pe2[i]]+=delta;
-		rwe3[pe3[i]]+=delta;
-		rwe4[pe4[i]]+=delta;
-		rwk7[pk7[i]]+=delta;
-		rwk6[pk6[i]]+=delta;
-		rwk5[pk5[i]]+=delta;
-		rwk4[pk4[i]]+=delta;
+		rw.e1[pe1[i]]+=delta;
+		rw.[pe2[i]]+=delta;
+		rw.e3[pe3[i]]+=delta;
+		rw.e4[pe4[i]]+=delta;
+		rw.k7[pk7[i]]+=delta;
+		rw.k6[pk6[i]]+=delta;
+		rw.k5[pk5[i]]+=delta;
+		rw.k4[pk4[i]]+=delta;
 		
-		rwe1[pe1_[i]]+=delta;
-		rwe2[pe2_[i]]+=delta;
-		rwe3[pe3_[i]]+=delta;
-		rwe4[pe4_[i]]+=delta;
-		rwk7[pk7_[i]]+=delta;
-		rwk6[pk6_[i]]+=delta;
-		rwk5[pk5_[i]]+=delta;
-		rwk4[pk4_[i]]+=delta;
+		rw.e1[pe1_[i]]+=delta;
+		rw.e2[pe2_[i]]+=delta;
+		rw.e3[pe3_[i]]+=delta;
+		rw.e4[pe4_[i]]+=delta;
+		rw.k7[pk7_[i]]+=delta;
+		rw.k6[pk6_[i]]+=delta;
+		rw.k5[pk5_[i]]+=delta;
+		rw.k4[pk4_[i]]+=delta;
 	}
 	for (int i = 0;i < 2;i++)
 	{
-		rwk8[pk8[i]] += delta;
-		rwk8[pk8_[i]] += delta;
+		rw.k8[pk8[i]] += delta;
+		rw.k8[pk8_[i]] += delta;
 	}
-	rwb += delta;
-	rwmob += delta*cmob;
-	rwib += delta*codd;
+	rw.wb += delta;
+	rw.wmob += delta*cmob;
+	rw.wodd += delta*codd;
 }
 }
 
@@ -2382,7 +2452,7 @@ void minit()
 	for (int i=0;i<winsize.Y;i++) 
 		for (int j=0;j<winsize.X;j++)
 			putchar(' ');
-	gotoXY({30,11}); printf("ºÚ°×Æå   1.3");
+	gotoXY({30,11}); printf("?????   1.3");
 	Sleep(400);
 }
 
@@ -2453,27 +2523,27 @@ public:
 void Game_BW::iPrint()
 {
 	gotoXY({0,0});
-	printf("¨X"); for (int i = 1; i < M_SIZE; i++) printf("¨T¨j"); printf("¨T¨[\n");
+	printf("?X"); for (int i = 1; i < M_SIZE; i++) printf("?T?j"); printf("?T?[\n");
 	for (Bit i = 0; i < M_SIZE; i++)
 	{
-		printf("¨U");
+		printf("?U");
 		for (Bit j = 0; j < M_SIZE; j++)
 		{
-			if (map[{i, j}] == C_W) printf("¡ð");
-			else if (map[{i, j}] == C_B) printf("¡ñ");
+			if (map[{i, j}] == C_W) printf("??");
+			else if (map[{i, j}] == C_B) printf("??");
 			else printf("  ");
-			printf("¨U");
+			printf("?U");
 		}
 		printf("\n");
 		if (i < M_SIZE - 1)
 		{
-			printf("¨d");
-			for (int j = 0; j < 7; j++) printf("¨T¨p"); printf("¨T¨g");
+			printf("?d");
+			for (int j = 0; j < 7; j++) printf("?T?p"); printf("?T?g");
 		}
 		else
 		{
-			printf("¨^");
-			for (int j = 0; j < 7; j++) printf("¨T¨m"); printf("¨T¨a");
+			printf("?^");
+			for (int j = 0; j < 7; j++) printf("?T?m"); printf("?T?a");
 		}
 		printf("\n");
 	}
@@ -2481,9 +2551,9 @@ void Game_BW::iPrint()
 	for (Bit i = 0; i < M_SIZE; i++)
 	{
 		for (Bit j = 0; j < M_SIZE; j++)
-			if (map[{i, j}] == C_W) fout<<"¡ð";
-			else if (map[{i, j}] == C_B) fout<<"¡ñ";
-			else fout<<"¡¤";
+			if (map[{i, j}] == C_W) fout<<"??";
+			else if (map[{i, j}] == C_B) fout<<"??";
+			else fout<<"??";
 		fout<<'\n';
 	}/*
 	fout<<"{\n";
@@ -2503,7 +2573,7 @@ void Game_BW::showCanDo()
 	for (auto &p : clist)
 	{
 		gotoXY(PlocToMloc(Ploc(p)));
-		printf("¡¤");
+		printf("??");
 	}
 }
 
@@ -2564,12 +2634,32 @@ void Game_BW::RunTests()
 	fresult<<wcnt<<'\n';
 }
 
-int listsize;
-Board boardlist[60];
-int collist[60];
-float targetval[60],finalVal;
+const int EXP_BUFFER_SIZE = 100000;
 
-void Game_BW::playEposide()
+struct ExpBuffer
+{
+	float targetV;
+	Board board;
+	Col col;
+}expbuffer[EXP_BUFFER_SIZE];
+bool pro_train=true; int pro_listsize;
+
+void insertFrame(float val, Board &board, int col)
+{
+	if (pro_train)
+	{
+		expbuffer[pro_listsize]={val,board, col};
+		pro_listsize++;
+		if (pro_listsize >= EXP_BUFFER_SIZE) pro_train=false;
+	}
+	else
+	{
+		int sr=rand()*rand() % EXP_BUFFER_SIZE;
+		expbuffer[sr]={val,board, col};
+	}
+}
+
+void playEposide()
 {
 	map=Map::Map_Start;
 	pcnt=4;
@@ -2581,6 +2671,8 @@ void Game_BW::playEposide()
 		Ploc sp;
 		ccmp.search_deep=4;
 		ccmp.solve(map, nplayer);
+		int val=ccmp.runSco(map, nplayer);
+		insert(val, map, nplayer);
 		
 		map.setPiece(sp.toMP(), nplayer);
 		if (!map.testAll(rPlayer())){
@@ -2597,32 +2689,44 @@ void Game_BW::playEposide()
 	}
 }
 
-void accuGradEpo()
+ll framePoint;
+
+void trainCoeff()
 {
-	for (int i=listsize-1;i>=0;i--)
+	for (;;framePoint++)
 	{
-		if (collist[i]=fi)
+		int nowp=framePoint % EXP_BUFFER_SIZE;
+		accuGrad();
+		if (framePoint%batch_size==0)
+		{
+			updateArg();
+		}
 	}
 }
 
 void Game_BW::RunLearning()
 {
 	const int run_cnt=1000, batch_size=1;
+	framePoint=0;
+	pro_train=true;
+	while (pro_train)
+	{
+		playEposide();
+	}
 	
 	for (int i=1;i<=run_cnt;i++)
 	{
-		playEposide();
-		accuGradEpo();
-		if (i%batch_size==0)
-		{
-			updateArgs();
-		}
+		const int per_playcount=100;
+		for (int j=1;i<=per_playcount;i++)
+			playEposide();
+		
+		trainCoeff();
 	}
 }
 
 void Game_BW::Play()
 {
-	Cmp_BW ccmp_b(1),ccmp_w(1);333
+	Cmp_BW ccmp_b(1),ccmp_w(1);
 	while (pcnt < M_SIZE*M_SIZE)
 	{
 		map.countPiece(pCnt);
@@ -2650,8 +2754,8 @@ void Game_BW::Play()
 		}
 		map.setPiece(sp.toMP(), nplayer);
 		gotoXY(PlocToMloc(sp));
-		if (nplayer == C_W) printf("¡ð");
-		else if (nplayer == C_B) printf("¡ñ");
+		if (nplayer == C_W) printf("??");
+		else if (nplayer == C_B) printf("??");
 		Sleep(1);
 		if (!map.testAll(rPlayer())){
 			if (!map.testAll(nplayer))
@@ -2682,7 +2786,7 @@ void Game_BW::End()
 	else
 		printf(" Winner:Black");
 	gotoXY({0,20});
-	printf("[·µ»Ø]");
+	printf("[????]");
 	while (1)
 	{
 		Ploc p=getCurClick();
@@ -2695,32 +2799,32 @@ void Game_BW::writeSelect(int col)
 	if (col==C_B)
 	{
 		gotoXY({32,11}); printf("                ");
-		if (sel_b==-1) {gotoXY({35,11}); printf("ºÚÉ«£ºÍæ¼Ò");}
+		if (sel_b==-1) {gotoXY({35,11}); printf("????????");}
 		else
 		{
-			gotoXY({32,11}); printf("ºÚÉ«£ºµçÄÔ");
+			gotoXY({32,11}); printf("?????????");
 			switch(sel_b)
 			{
-				case 0:printf("(²âÊÔ)"); break;
-				case 1:printf("(²âÊÔ)"); break;
-				case 2:printf("(²âÊÔ)"); break;
-				case 3:printf("(²âÊÔ)"); break;
+				case 0:printf("(????)"); break;
+				case 1:printf("(????)"); break;
+				case 2:printf("(????)"); break;
+				case 3:printf("(????)"); break;
 			}
 		}
 	}
 	else if (col==C_W)
 	{
 		gotoXY({32,12}); printf("                 ");
-		if (sel_w==-1) {gotoXY({35,12}); printf("°×É«£ºÍæ¼Ò");}
+		if (sel_w==-1) {gotoXY({35,12}); printf("????????");}
 		else
 		{
-			gotoXY({32,12}); printf("°×É«£ºµçÄÔ");
+			gotoXY({32,12}); printf("?????????");
 			switch(sel_w)
 			{
-				case 0:printf("(²âÊÔ)"); break;
-				case 1:printf("(²âÊÔ)"); break;
-				case 2:printf("(²âÊÔ)"); break;
-				case 3:printf("(²âÊÔ)"); break;
+				case 0:printf("(????)"); break;
+				case 1:printf("(????)"); break;
+				case 2:printf("(????)"); break;
+				case 3:printf("(????)"); break;
 			}
 		}
 	}
@@ -2750,19 +2854,19 @@ void Game_BW::showAbout()
 int Game_BW::splash()
 {
 	gotoXY({0,0});
-	printf("¨X"); for (int i = 1; i < winsize.X/2-1; i++) printf("¨T"); printf("¨[");
+	printf("?X"); for (int i = 1; i < winsize.X/2-1; i++) printf("?T"); printf("?[");
 	for (int i=1;i<winsize.Y-2;i++)
 	{
-		printf("¨U");
+		printf("?U");
 		for (int j=1;j<winsize.X/2-1;j++)
 			printf("  ");
-		printf("¨U");
+		printf("?U");
 	}
-	printf("¨^"); for (int i = 1; i < winsize.X/2-1; i++) printf("¨T"); printf("¨a");
+	printf("?^"); for (int i = 1; i < winsize.X/2-1; i++) printf("?T"); printf("?a");
 	gotoXY({30,11}); printf("               ");
-	gotoXY({32,8}); printf("ºÚ°×Æå   1.3");
-	gotoXY({36,10}); printf(">>¿ªÊ¼<<");
-	gotoXY({34,13}); printf("¹ØÓÚ    ÍË³ö");
+	gotoXY({32,8}); printf("?????   1.3");
+	gotoXY({36,10}); printf(">>???<<");
+	gotoXY({34,13}); printf("????    ???");
 	sel_b=-1; writeSelect(C_B);
 	sel_w=-1; writeSelect(C_W);
 	gotoXY({0,0});
