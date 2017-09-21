@@ -1259,149 +1259,151 @@ public:
 	
 	const int pow3[13]={1,3,9,27,81,243,729,2187,6561,19683,59049,177147,531441};
 
-void readShort(FILE *stream, short &tar)
-{
-	fread(&tar, 2, 1, stream);
-}
-
-void writeShort(FILE *stream, short tar)
-{
-	fwrite(&tar, 2, 1, stream);
-}
-/*
-e1x2: edge+2x
-c52: ed_cor2*5
-c33: ed_cor3*3
-e2: line2
-e3: line3
-e4: line4
-k8, k7, k6, k5, k4: / 
-wb: const 
-wodd: parity
-wmob: mobibity
-*/
-struct CoeffPack
-{
-	short e1[59049], c52[59049], c33[19683],
-		e2[6561], e3[6561], e4[6561], k8[6561], k7[2187], k6[729], k5[243], k4[81],
-		wb, wodd, wmob;
-	
-	void clear()
+	void readShort(FILE *stream, short &tar)
 	{
-		wb=wodd=wmob=0;
-		for (int j=0;j<59049;j++)
-			e1[j]=c52[j]=0;
-		for (int j=0;j<19683;j++)
-			c33[j]=0;
-		for (int j=0;j<6561;j++)
-			e2[j]=e3[j]=e4[j]=k8[j]=0;
-		for (int j=0;j<2187;j++)
-			k7[j]=0;
-		for (int j=0;j<729;j++)
-			k6[j]=0;
-		for (int j=0;j<243;j++)
-			k5[j]=0;
-		for (int j=0;j<81;j++)
-			k4[j]=0;
+		fread(&tar, 2, 1, stream);
 	}
-};
-
-struct GameCoeff
-{
 	
-	#define COEFF_PARTCNT 11
-	CoeffPack dat[COEFF_PARTCNT];
-	
-	#define EVAL_FILE "reversicoeff.bin"
-	#define EVAL_FILE_S "reversicoeff_temp.bin"
-	
-	void initPtnData()
+	void writeShort(FILE *stream, short tar)
 	{
-		FILE *eval_stream=fopen(EVAL_FILE, "rb");
-		short part_cnt; readShort(eval_stream, part_cnt);
-		assert(part_cnt == COEFF_PARTCNT);
-		for (int i=0;i<part_cnt;i++)
+		fwrite(&tar, 2, 1, stream);
+	}
+	/*
+	e1x2: edge+2x
+	c52: ed_cor2*5
+	c33: ed_cor3*3
+	e2: line2
+	e3: line3
+	e4: line4
+	k8, k7, k6, k5, k4: / 
+	wb: const 
+	wodd: parity
+	wmob: mobibity
+	*/
+	struct CoeffPack
+	{
+		short e1[59049], c52[59049], c33[19683],
+			e2[6561], e3[6561], e4[6561], k8[6561], k7[2187], k6[729], k5[243], k4[81],
+			wb, wodd, wmob;
+		
+		void clear()
 		{
-			readShort(eval_stream,pdata[i].wb);
-			readShort(eval_stream,pdata[i].wodd);
-			readShort(eval_stream,pdata[i].wmob);
+			wb=wodd=wmob=0;
 			for (int j=0;j<59049;j++)
-				readShort(eval_stream,pdata[i].e1[j]);
-			for (int j=0;j<59049;j++)
-				readShort(eval_stream,pdata[i].c52[j]);
+				e1[j]=c52[j]=0;
 			for (int j=0;j<19683;j++)
-				readShort(eval_stream,pdata[i].c33[j]);
+				c33[j]=0;
 			for (int j=0;j<6561;j++)
-				readShort(eval_stream,pdata[i].e2[j]);
-			for (int j=0;j<6561;j++)
-				readShort(eval_stream,pdata[i].e3[j]);
-			for (int j=0;j<6561;j++)
-				readShort(eval_stream,pdata[i].e4[j]);
-			for (int j=0;j<6561;j++)
-				readShort(eval_stream,pdata[i].k8[j]);
+				e2[j]=e3[j]=e4[j]=k8[j]=0;
 			for (int j=0;j<2187;j++)
-				readShort(eval_stream,pdata[i].k7[j]);
+				k7[j]=0;
 			for (int j=0;j<729;j++)
-				readShort(eval_stream,pdata[i].k6[j]);
+				k6[j]=0;
 			for (int j=0;j<243;j++)
-				readShort(eval_stream,pdata[i].k5[j]);
+				k5[j]=0;
 			for (int j=0;j<81;j++)
-				readShort(eval_stream,pdata[i].k4[j]);
-			cout<<pdata[i].wb<<'\n';
-			cout<<pdata[i].k4[80]<<'\n';
+				k4[j]=0;
 		}
-		fclose(eval_stream);
-	}
+	};
 	
-	void savePtnData()
+	struct GameCoeff
 	{
-		FILE *eval_stream=fopen(EVAL_FILE_S, "wb");
-		short part_cnt=COEFF_PARTCNT; writeShort(eval_stream, part_cnt);
-		for (int i=0;i<part_cnt;i++)
+		
+		#define COEFF_PARTCNT 11
+		CoeffPack dat[COEFF_PARTCNT];
+		
+		#define EVAL_FILE "reversicoeff.bin"
+		#define EVAL_FILE_S "reversicoeff_temp.bin"
+		
+		void initPtnData()
 		{
-			writeShort(eval_stream,pdata[i].wb);
-			writeShort(eval_stream,pdata[i].wodd);
-			writeShort(eval_stream,pdata[i].wmob);
-			for (int j=0;j<59049;j++)
-				writeShort(eval_stream,pdata[i].e1[j]);
-			for (int j=0;j<59049;j++)
-				writeShort(eval_stream,pdata[i].c52[j]);
-			for (int j=0;j<19683;j++)
-				writeShort(eval_stream,pdata[i].c33[j]);
-			for (int j=0;j<6561;j++)
-				writeShort(eval_stream,pdata[i].e2[j]);
-			for (int j=0;j<6561;j++)
-				writeShort(eval_stream,pdata[i].e3[j]);
-			for (int j=0;j<6561;j++)
-				writeShort(eval_stream,pdata[i].e4[j]);
-			for (int j=0;j<6561;j++)
-				writeShort(eval_stream,pdata[i].k8[j]);
-			for (int j=0;j<2187;j++)
-				writeShort(eval_stream,pdata[i].k7[j]);
-			for (int j=0;j<729;j++)
-				writeShort(eval_stream,pdata[i].k6[j]);
-			for (int j=0;j<243;j++)
-				writeShort(eval_stream,pdata[i].k5[j]);
-			for (int j=0;j<81;j++)
-				writeShort(eval_stream,pdata[i].k4[j]);
-			cout<<pdata[i].wb<<'\n';
-			cout<<pdata[i].k4[80]<<'\n';
+			FILE *eval_stream=fopen(EVAL_FILE, "rb");
+			short part_cnt; readShort(eval_stream, part_cnt);
+			assert(part_cnt == COEFF_PARTCNT);
+			for (int i=0;i<part_cnt;i++)
+			{
+				auto &pdata=dat[i];
+				readShort(eval_stream,pdata.wb);
+				readShort(eval_stream,pdata.wodd);
+				readShort(eval_stream,pdata.wmob);
+				for (int j=0;j<59049;j++)
+					readShort(eval_stream,pdata.e1[j]);
+				for (int j=0;j<59049;j++)
+					readShort(eval_stream,pdata.c52[j]);
+				for (int j=0;j<19683;j++)
+					readShort(eval_stream,pdata.c33[j]);
+				for (int j=0;j<6561;j++)
+					readShort(eval_stream,pdata.e2[j]);
+				for (int j=0;j<6561;j++)
+					readShort(eval_stream,pdata.e3[j]);
+				for (int j=0;j<6561;j++)
+					readShort(eval_stream,pdata.e4[j]);
+				for (int j=0;j<6561;j++)
+					readShort(eval_stream,pdata.k8[j]);
+				for (int j=0;j<2187;j++)
+					readShort(eval_stream,pdata.k7[j]);
+				for (int j=0;j<729;j++)
+					readShort(eval_stream,pdata.k6[j]);
+				for (int j=0;j<243;j++)
+					readShort(eval_stream,pdata.k5[j]);
+				for (int j=0;j<81;j++)
+					readShort(eval_stream,pdata.k4[j]);
+				cout<<pdata.wb<<'\n';
+				cout<<pdata.k4[80]<<'\n';
+			}
+			fclose(eval_stream);
 		}
-		fclose(eval_stream);
-	}
-	
-	void clear()
-	{
-		for (int i=0;i<part_cnt;i++)
-			pdata[i].clear();
-	}
-	
-	const int Eval_PrTable[61]=
-		{-1,-1,0,0,0,1,1,1,2,2,2,3,3,3,4,4,4,4,5,5,5,5,6,6,6,6,
-		6,7,7,7,7,7,8,8,8,8,8,8,9,9,9,9,9,9,10,10,10,10,
-		10,10,10,10,10,10,10,10,10,10,10,10,10}; 
+		
+		void savePtnData()
+		{
+			FILE *eval_stream=fopen(EVAL_FILE_S, "wb");
+			short part_cnt=COEFF_PARTCNT; writeShort(eval_stream, part_cnt);
+			for (int i=0;i<part_cnt;i++)
+			{
+				auto &pdata=dat[i];
+				writeShort(eval_stream,pdata.wb);
+				writeShort(eval_stream,pdata.wodd);
+				writeShort(eval_stream,pdata.wmob);
+				for (int j=0;j<59049;j++)
+					writeShort(eval_stream,pdata.e1[j]);
+				for (int j=0;j<59049;j++)
+					writeShort(eval_stream,pdata.c52[j]);
+				for (int j=0;j<19683;j++)
+					writeShort(eval_stream,pdata.c33[j]);
+				for (int j=0;j<6561;j++)
+					writeShort(eval_stream,pdata.e2[j]);
+				for (int j=0;j<6561;j++)
+					writeShort(eval_stream,pdata.e3[j]);
+				for (int j=0;j<6561;j++)
+					writeShort(eval_stream,pdata.e4[j]);
+				for (int j=0;j<6561;j++)
+					writeShort(eval_stream,pdata.k8[j]);
+				for (int j=0;j<2187;j++)
+					writeShort(eval_stream,pdata.k7[j]);
+				for (int j=0;j<729;j++)
+					writeShort(eval_stream,pdata.k6[j]);
+				for (int j=0;j<243;j++)
+					writeShort(eval_stream,pdata.k5[j]);
+				for (int j=0;j<81;j++)
+					writeShort(eval_stream,pdata.k4[j]);
+				cout<<pdata.wb<<'\n';
+				cout<<pdata.k4[80]<<'\n';
+			}
+			fclose(eval_stream);
+		}
+		
+		void clear()
+		{
+			for (int i=0;i<COEFF_PARTCNT;i++)
+				dat[i].clear();
+		}
+		
+		static const int PrTable[61]; 
 	}coeff_data;
-	
+	const int GameCoeff::PrTable[61]=
+			{-1,-1,0,0,0,1,1,1,2,2,2,3,3,3,4,4,4,4,5,5,5,5,6,6,6,6,
+			6,7,7,7,7,7,8,8,8,8,8,8,9,9,9,9,9,9,10,10,10,10,
+			10,10,10,10,10,10,10,10,10,10,10,10,10};
 	int Cmp_BW::getMob(Map &map, Col col)
 	{
 		int ret = 0;
@@ -1416,15 +1418,16 @@ struct GameCoeff
 		Bit cnt[3];
 		map.countPiece(cnt);
 		maptoBoard(map, col);
-		int eval_pr=Eval_PrTable[cnt[0]];
-		if (eval_pr==10) eval_pr=9;
-		int score=pdata[eval_pr].wb;
+		int eval_pr=GameCoeff::PrTable[cnt[0]];
+		//if (eval_pr==10) eval_pr=9;
+		auto &pdata = coeff_data.dat[eval_pr];
+		int score=pdata.wb;
 		
 		int cmob = getMob(map, col);
 		int codd = cnt[0]%2;
 		
-		score += pdata[eval_pr].wodd*codd;
-		score += pdata[eval_pr].wmob*cmob;
+		score += pdata.wodd*codd;
+		score += pdata.wmob*cmob;
 		
 		int ptn;
 		
@@ -1438,7 +1441,7 @@ struct GameCoeff
 		ptn = 3 * ptn + board[21];
 		ptn = 3 * ptn + board[22];
 		ptn = 3 * ptn + board[11];
-		score += pdata[eval_pr].e1[ptn];
+		score += pdata.e1[ptn];
 		
 		ptn = board[88];
 		ptn = 3 * ptn + board[77];
@@ -1450,7 +1453,7 @@ struct GameCoeff
 		ptn = 3 * ptn + board[28];
 		ptn = 3 * ptn + board[27];
 		ptn = 3 * ptn + board[18];
-		score += pdata[eval_pr].e1[ptn];
+		score += pdata.e1[ptn];
 		
 		ptn = board[18];
 		ptn = 3 * ptn + board[27];
@@ -1462,7 +1465,7 @@ struct GameCoeff
 		ptn = 3 * ptn + board[12];
 		ptn = 3 * ptn + board[22];
 		ptn = 3 * ptn + board[11];
-		score += pdata[eval_pr].e1[ptn];
+		score += pdata.e1[ptn];
 		
 		ptn = board[88];
 		ptn = 3 * ptn + board[77];
@@ -1474,7 +1477,7 @@ struct GameCoeff
 		ptn = 3 * ptn + board[82];
 		ptn = 3 * ptn + board[72];
 		ptn = 3 * ptn + board[81];
-		score += pdata[eval_pr].e1[ptn];
+		score += pdata.e1[ptn];
 		
 		ptn = board[82];
 		ptn = 3 * ptn + board[72];
@@ -1484,7 +1487,7 @@ struct GameCoeff
 		ptn = 3 * ptn + board[32];
 		ptn = 3 * ptn + board[22];
 		ptn = 3 * ptn + board[12];
-		score += pdata[eval_pr].e2[ptn];
+		score += pdata.e2[ptn];
 		
 		ptn = board[87];
 		ptn = 3 * ptn + board[77];
@@ -1494,7 +1497,7 @@ struct GameCoeff
 		ptn = 3 * ptn + board[37];
 		ptn = 3 * ptn + board[27];
 		ptn = 3 * ptn + board[17];
-		score += pdata[eval_pr].e2[ptn];
+		score += pdata.e2[ptn];
 		
 		ptn = board[28];
 		ptn = 3 * ptn + board[27];
@@ -1504,7 +1507,7 @@ struct GameCoeff
 		ptn = 3 * ptn + board[23];
 		ptn = 3 * ptn + board[22];
 		ptn = 3 * ptn + board[21];
-		score += pdata[eval_pr].e2[ptn];
+		score += pdata.e2[ptn];
 		
 		ptn = board[78];
 		ptn = 3 * ptn + board[77];
@@ -1514,7 +1517,7 @@ struct GameCoeff
 		ptn = 3 * ptn + board[73];
 		ptn = 3 * ptn + board[72];
 		ptn = 3 * ptn + board[71];
-		score += pdata[eval_pr].e2[ptn];
+		score += pdata.e2[ptn];
 		
 		ptn = board[83];
 		ptn = 3 * ptn + board[73];
@@ -1524,7 +1527,7 @@ struct GameCoeff
 		ptn = 3 * ptn + board[33];
 		ptn = 3 * ptn + board[23];
 		ptn = 3 * ptn + board[13];
-		score += pdata[eval_pr].e3[ptn];
+		score += pdata.e3[ptn];
 		
 		ptn = board[86];
 		ptn = 3 * ptn + board[76];
@@ -1534,7 +1537,7 @@ struct GameCoeff
 		ptn = 3 * ptn + board[36];
 		ptn = 3 * ptn + board[26];
 		ptn = 3 * ptn + board[16];
-		score += pdata[eval_pr].e3[ptn];
+		score += pdata.e3[ptn];
 		
 		ptn = board[38];
 		ptn = 3 * ptn + board[37];
@@ -1544,7 +1547,7 @@ struct GameCoeff
 		ptn = 3 * ptn + board[33];
 		ptn = 3 * ptn + board[32];
 		ptn = 3 * ptn + board[31];
-		score += pdata[eval_pr].e3[ptn];
+		score += pdata.e3[ptn];
 		
 		ptn = board[68];
 		ptn = 3 * ptn + board[67];
@@ -1554,7 +1557,7 @@ struct GameCoeff
 		ptn = 3 * ptn + board[63];
 		ptn = 3 * ptn + board[62];
 		ptn = 3 * ptn + board[61];
-		score += pdata[eval_pr].e3[ptn];
+		score += pdata.e3[ptn];
 		
 		ptn = board[84];
 		ptn = 3 * ptn + board[74];
@@ -1564,7 +1567,7 @@ struct GameCoeff
 		ptn = 3 * ptn + board[34];
 		ptn = 3 * ptn + board[24];
 		ptn = 3 * ptn + board[14];
-		score += pdata[eval_pr].e4[ptn];
+		score += pdata.e4[ptn];
 		
 		ptn = board[85];
 		ptn = 3 * ptn + board[75];
@@ -1574,7 +1577,7 @@ struct GameCoeff
 		ptn = 3 * ptn + board[35];
 		ptn = 3 * ptn + board[25];
 		ptn = 3 * ptn + board[15];
-		score += pdata[eval_pr].e4[ptn];
+		score += pdata.e4[ptn];
 		
 		ptn = board[48];
 		ptn = 3 * ptn + board[47];
@@ -1584,7 +1587,7 @@ struct GameCoeff
 		ptn = 3 * ptn + board[43];
 		ptn = 3 * ptn + board[42];
 		ptn = 3 * ptn + board[41];
-		score += pdata[eval_pr].e4[ptn];
+		score += pdata.e4[ptn];
 		
 		ptn = board[58];
 		ptn = 3 * ptn + board[57];
@@ -1594,7 +1597,7 @@ struct GameCoeff
 		ptn = 3 * ptn + board[53];
 		ptn = 3 * ptn + board[52];
 		ptn = 3 * ptn + board[51];
-		score += pdata[eval_pr].e4[ptn];
+		score += pdata.e4[ptn];
 		
 		ptn = board[88];
 		ptn = 3 * ptn + board[77];
@@ -1604,7 +1607,7 @@ struct GameCoeff
 		ptn = 3 * ptn + board[33];
 		ptn = 3 * ptn + board[22];
 		ptn = 3 * ptn + board[11];
-		score += pdata[eval_pr].k8[ptn];
+		score += pdata.k8[ptn];
 		
 		ptn = board[81];
 		ptn = 3 * ptn + board[72];
@@ -1614,7 +1617,7 @@ struct GameCoeff
 		ptn = 3 * ptn + board[36];
 		ptn = 3 * ptn + board[27];
 		ptn = 3 * ptn + board[18];
-		score += pdata[eval_pr].k8[ptn];
+		score += pdata.k8[ptn];
 		
 		ptn = board[78];
 		ptn = 3 * ptn + board[67];
@@ -1623,7 +1626,7 @@ struct GameCoeff
 		ptn = 3 * ptn + board[34];
 		ptn = 3 * ptn + board[23];
 		ptn = 3 * ptn + board[12];
-		score += pdata[eval_pr].k7[ptn];
+		score += pdata.k7[ptn];
 		
 		ptn = board[87];
 		ptn = 3 * ptn + board[76];
@@ -1632,7 +1635,7 @@ struct GameCoeff
 		ptn = 3 * ptn + board[43];
 		ptn = 3 * ptn + board[32];
 		ptn = 3 * ptn + board[21];
-		score += pdata[eval_pr].k7[ptn];
+		score += pdata.k7[ptn];
 		
 		ptn = board[71];
 		ptn = 3 * ptn + board[62];
@@ -1641,7 +1644,7 @@ struct GameCoeff
 		ptn = 3 * ptn + board[35];
 		ptn = 3 * ptn + board[26];
 		ptn = 3 * ptn + board[17];
-		score += pdata[eval_pr].k7[ptn];
+		score += pdata.k7[ptn];
 		
 		ptn = board[82];
 		ptn = 3 * ptn + board[73];
@@ -1650,7 +1653,7 @@ struct GameCoeff
 		ptn = 3 * ptn + board[46];
 		ptn = 3 * ptn + board[37];
 		ptn = 3 * ptn + board[28];
-		score += pdata[eval_pr].k7[ptn];
+		score += pdata.k7[ptn];
 		
 		ptn = board[68];
 		ptn = 3 * ptn + board[57];
@@ -1658,7 +1661,7 @@ struct GameCoeff
 		ptn = 3 * ptn + board[35];
 		ptn = 3 * ptn + board[24];
 		ptn = 3 * ptn + board[13];
-		score += pdata[eval_pr].k6[ptn];
+		score += pdata.k6[ptn];
 		
 		ptn = board[86];
 		ptn = 3 * ptn + board[75];
@@ -1666,7 +1669,7 @@ struct GameCoeff
 		ptn = 3 * ptn + board[53];
 		ptn = 3 * ptn + board[42];
 		ptn = 3 * ptn + board[31];
-		score += pdata[eval_pr].k6[ptn];
+		score += pdata.k6[ptn];
 		
 		ptn = board[61];
 		ptn = 3 * ptn + board[52];
@@ -1674,7 +1677,7 @@ struct GameCoeff
 		ptn = 3 * ptn + board[34];
 		ptn = 3 * ptn + board[25];
 		ptn = 3 * ptn + board[16];
-		score += pdata[eval_pr].k6[ptn];
+		score += pdata.k6[ptn];
 		
 		ptn = board[83];
 		ptn = 3 * ptn + board[74];
@@ -1682,59 +1685,59 @@ struct GameCoeff
 		ptn = 3 * ptn + board[56];
 		ptn = 3 * ptn + board[47];
 		ptn = 3 * ptn + board[38];
-		score += pdata[eval_pr].k6[ptn];
+		score += pdata.k6[ptn];
 		
 		ptn = board[58];
 		ptn = 3 * ptn + board[47];
 		ptn = 3 * ptn + board[36];
 		ptn = 3 * ptn + board[25];
 		ptn = 3 * ptn + board[14];
-		score += pdata[eval_pr].k5[ptn];
+		score += pdata.k5[ptn];
 		
 		ptn = board[85];
 		ptn = 3 * ptn + board[74];
 		ptn = 3 * ptn + board[63];
 		ptn = 3 * ptn + board[52];
 		ptn = 3 * ptn + board[41];
-		score += pdata[eval_pr].k5[ptn];
+		score += pdata.k5[ptn];
 		
 		ptn = board[51];
 		ptn = 3 * ptn + board[42];
 		ptn = 3 * ptn + board[33];
 		ptn = 3 * ptn + board[24];
 		ptn = 3 * ptn + board[15];
-		score += pdata[eval_pr].k5[ptn];
+		score += pdata.k5[ptn];
 		
 		ptn = board[84];
 		ptn = 3 * ptn + board[75];
 		ptn = 3 * ptn + board[66];
 		ptn = 3 * ptn + board[57];
 		ptn = 3 * ptn + board[48];
-		score += pdata[eval_pr].k5[ptn];
+		score += pdata.k5[ptn];
 	
 		ptn = board[48];
 		ptn = 3 * ptn + board[37];
 		ptn = 3 * ptn + board[26];
 		ptn = 3 * ptn + board[15];
-		score += pdata[eval_pr].k4[ptn];
+		score += pdata.k4[ptn];
 		
 		ptn = board[84];
 		ptn = 3 * ptn + board[73];
 		ptn = 3 * ptn + board[62];
 		ptn = 3 * ptn + board[51];
-		score += pdata[eval_pr].k4[ptn];
+		score += pdata.k4[ptn];
 		
 		ptn = board[41];
 		ptn = 3 * ptn + board[32];
 		ptn = 3 * ptn + board[23];
 		ptn = 3 * ptn + board[14];
-		score += pdata[eval_pr].k4[ptn];
+		score += pdata.k4[ptn];
 		
 		ptn = board[85];
 		ptn = 3 * ptn + board[76];
 		ptn = 3 * ptn + board[67];
 		ptn = 3 * ptn + board[58];
-		score += pdata[eval_pr].k4[ptn];
+		score += pdata.k4[ptn];
 		
 		ptn = board[11];
 		ptn = 3 * ptn + board[12];
@@ -1745,7 +1748,7 @@ struct GameCoeff
 		ptn = 3 * ptn + board[31];
 		ptn = 3 * ptn + board[32];
 		ptn = 3 * ptn + board[33];
-		score += pdata[eval_pr].c33[ptn];
+		score += pdata.c33[ptn];
 		
 		ptn = board[81];
 		ptn = 3 * ptn + board[82];
@@ -1756,7 +1759,7 @@ struct GameCoeff
 		ptn = 3 * ptn + board[61];
 		ptn = 3 * ptn + board[62];
 		ptn = 3 * ptn + board[63];
-		score += pdata[eval_pr].c33[ptn];
+		score += pdata.c33[ptn];
 		
 		ptn = board[18];
 		ptn = 3 * ptn + board[17];
@@ -1767,7 +1770,7 @@ struct GameCoeff
 		ptn = 3 * ptn + board[38];
 		ptn = 3 * ptn + board[37];
 		ptn = 3 * ptn + board[36];
-		score += pdata[eval_pr].c33[ptn];
+		score += pdata.c33[ptn];
 		
 		ptn = board[88];
 		ptn = 3 * ptn + board[87];
@@ -1778,7 +1781,7 @@ struct GameCoeff
 		ptn = 3 * ptn + board[68];
 		ptn = 3 * ptn + board[67];
 		ptn = 3 * ptn + board[66];
-		score += pdata[eval_pr].c33[ptn];
+		score += pdata.c33[ptn];
 		
 		ptn = board[11];
 		ptn = 3 * ptn + board[12];
@@ -1790,7 +1793,7 @@ struct GameCoeff
 		ptn = 3 * ptn + board[23];
 		ptn = 3 * ptn + board[24];
 		ptn = 3 * ptn + board[25];
-		score += pdata[eval_pr].c52[ptn];
+		score += pdata.c52[ptn];
 		
 		ptn = board[81];
 		ptn = 3 * ptn + board[82];
@@ -1802,7 +1805,7 @@ struct GameCoeff
 		ptn = 3 * ptn + board[73];
 		ptn = 3 * ptn + board[74];
 		ptn = 3 * ptn + board[75];
-		score += pdata[eval_pr].c52[ptn];
+		score += pdata.c52[ptn];
 		
 		ptn = board[18];
 		ptn = 3 * ptn + board[17];
@@ -1814,7 +1817,7 @@ struct GameCoeff
 		ptn = 3 * ptn + board[26];
 		ptn = 3 * ptn + board[25];
 		ptn = 3 * ptn + board[24];
-		score += pdata[eval_pr].c52[ptn];
+		score += pdata.c52[ptn];
 		
 		ptn = board[88];
 		ptn = 3 * ptn + board[87];
@@ -1826,7 +1829,7 @@ struct GameCoeff
 		ptn = 3 * ptn + board[76];
 		ptn = 3 * ptn + board[75];
 		ptn = 3 * ptn + board[74];
-		score += pdata[eval_pr].c52[ptn];
+		score += pdata.c52[ptn];
 		
 		ptn = board[11];
 		ptn = 3 * ptn + board[21];
@@ -1838,7 +1841,7 @@ struct GameCoeff
 		ptn = 3 * ptn + board[32];
 		ptn = 3 * ptn + board[42];
 		ptn = 3 * ptn + board[52];
-		score += pdata[eval_pr].c52[ptn];
+		score += pdata.c52[ptn];
 		
 		ptn = board[18];
 		ptn = 3 * ptn + board[28];
@@ -1850,7 +1853,7 @@ struct GameCoeff
 		ptn = 3 * ptn + board[37];
 		ptn = 3 * ptn + board[47];
 		ptn = 3 * ptn + board[57];
-		score += pdata[eval_pr].c52[ptn];
+		score += pdata.c52[ptn];
 		
 		ptn = board[81];
 		ptn = 3 * ptn + board[71];
@@ -1862,7 +1865,7 @@ struct GameCoeff
 		ptn = 3 * ptn + board[62];
 		ptn = 3 * ptn + board[52];
 		ptn = 3 * ptn + board[42];
-		score += pdata[eval_pr].c52[ptn];
+		score += pdata.c52[ptn];
 		
 		ptn = board[88];
 		ptn = 3 * ptn + board[78];
@@ -1874,7 +1877,7 @@ struct GameCoeff
 		ptn = 3 * ptn + board[67];
 		ptn = 3 * ptn + board[57];
 		ptn = 3 * ptn + board[47];
-		score += pdata[eval_pr].c52[ptn];
+		score += pdata.c52[ptn];
 		
 		return score;
 	}
@@ -1934,13 +1937,38 @@ struct GameCoeff
 
 namespace LinReg
 {
-GameCoeff rweight;
+const int le=0.001;
+int batch_size;
+bwcore::GameCoeff rweight;
 int ptne1[4][10],ptne2[4][8],ptne3[4][8],ptne4[4][8],ptnk8[2][8],ptnk7[4][7],ptnk6[4][6],ptnk5[4][5],ptnk4[4][4];
 int ptne1_[4][10],ptne2_[4][8],ptne3_[4][8],ptne4_[4][8],ptnk8_[2][8],ptnk7_[4][7],ptnk6_[4][6],ptnk5_[4][5],ptnk4_[4][4];
 
-int mm[8][8];
+int mm[8][8],mcol;
+using namespace bwcore;
 
-void getptns(int num)
+void mapToMM(Map &map) 
+{
+	if (mcol==C_B)
+	{
+		for (int i=0;i<8;i++)
+			for (int j=0;j<8;j++)
+				mm[i][j]=map[i*8+j];
+	}
+	else
+	{
+		for (int i=0;i<8;i++)
+			for (int j=0;j<8;j++)
+			{
+				bwcore::Col col=map[i*8+j];
+				if (col!=C_E)
+					mm[i][j]=col_f(col);
+				else
+					mm[i][j]=0;
+			}
+	}
+}
+
+void getptns()
 {
 	ptne1[0][0]=mm[0][0];
 	ptne1[0][1]=mm[1][1];
@@ -2249,16 +2277,16 @@ float ssig=0,sse=0;
 Map mmap;
 Bit mcnt[3];
 
-int getMob(int num)
+int getMob()
 {
 	int ret=0;
 	for (auto i=MP_F;i<MP_E;i++)
-		if (mmap.testPiece(i, mcol[num]))
+		if (mmap.testPiece(i, mcol))
 			ret++;
 	return ret;
 }
 
-int getOdd(int num)
+int getOdd()
 {
 	return mcnt[0]%2;
 }
@@ -2308,10 +2336,10 @@ void valid(int num)
 void updateArg()
 {
 	float ee=le/batch_size;
-	for (int k=0;k<COEFF_PACK_SIZE;k++)
+	for (int k=0;k<COEFF_PARTCNT;k++)
 	{
-		CoeffPack &w=coeff_data.pdata[k];
-		CoeffPack &rw=rweight.pdata[k];
+		auto &w=coeff_data.dat[k];
+		auto &rw=rweight.dat[k];
 		for (int i = 0;i < 59049;i++)
 			w.e1[i] += rw.e1[i] * ee;
 		for (int i = 0;i < 6561;i++)
@@ -2334,21 +2362,23 @@ void updateArg()
 		w.wb += rw.wb*ee;
 	}
 	
-	rw.clear();
+	rweight.clear();
 }
 
-void accuGrad(Board mmap)
+void accuGrad(Map &map, int col, float mval)
 {
+	mmap=map; mcol=col;
 	mmap.countPiece(mcnt);
+	mapToMM(mmap);
 	//cout<<mmap.toString(); 
-	getptns(num);
+	getptns();
 	getpartner();
 	int pe1[4],pe2[4],pe3[4],pe4[4],pk8[2],pk7[4],pk6[4],pk5[4],pk4[4];
 	int pe1_[4], pe2_[4], pe3_[4], pe4_[4], pk8_[2], pk7_[4], pk6_[4], pk5_[4], pk4_[4];
 	
-	
-	CoeffPack &w=coeff_data.pdata[eval_pr];
-	CoeffPack &rw=rweight.pdata[eval_pr];
+	int eval_pr=GameCoeff::PrTable[mcnt[0]];
+	auto &w=coeff_data.dat[eval_pr];
+	auto &rw=rweight.dat[eval_pr];
 	for (int i=0;i<4;i++)
 	{
 		pe1[i] = ptnhash(ptne1[i], 10);
@@ -2389,17 +2419,17 @@ void accuGrad(Board mmap)
 	}
 	for (int i = 0;i < 2;i++) 
 		sigma += w.k8[pk8[i]];
-	int cmob = getMob(num);
-	int codd = getOdd(num);
+	int cmob = getMob();
+	int codd = getOdd();
 	sigma += w.wmob*cmob;
 	sigma += w.wodd*codd;
 
-	float mse=(sigma-mval[num])*(sigma-mval[num])/2, delta=mval[num]-sigma;
+	float mse=(sigma-mval)*(sigma-mval)/2, delta=mval-sigma;
 	sse+=fabs(delta);
 	for (int i=0;i<4;i++)
 	{
 		rw.e1[pe1[i]]+=delta;
-		rw.[pe2[i]]+=delta;
+		rw.e2[pe2[i]]+=delta;
 		rw.e3[pe3[i]]+=delta;
 		rw.e4[pe4[i]]+=delta;
 		rw.k7[pk7[i]]+=delta;
@@ -2515,8 +2545,10 @@ private:
 	void Play();
 	void End();
 	void SelfPlay();
+	void playEposide();
 public:
 	void RunTests();
+	void RunLearning();
 	void UserPlay();
 }game;
 
@@ -2639,32 +2671,31 @@ const int EXP_BUFFER_SIZE = 100000;
 struct ExpBuffer
 {
 	float targetV;
-	Board board;
+	Map map;
 	Col col;
 }expbuffer[EXP_BUFFER_SIZE];
 bool pro_train=true; int pro_listsize;
 
-void insertFrame(float val, Board &board, int col)
+void insertFrame(float val, Map &map, int col)
 {
 	if (pro_train)
 	{
-		expbuffer[pro_listsize]={val,board, col};
+		expbuffer[pro_listsize]={val,map, col};
 		pro_listsize++;
 		if (pro_listsize >= EXP_BUFFER_SIZE) pro_train=false;
 	}
 	else
 	{
 		int sr=rand()*rand() % EXP_BUFFER_SIZE;
-		expbuffer[sr]={val,board, col};
+		expbuffer[sr]={val,map, col};
 	}
 }
 
-void playEposide()
+void Game_BW::playEposide()
 {
 	map=Map::Map_Start;
 	pcnt=4;
 	Cmp_BW ccmp(1);
-	listsize=0;
 	while (pcnt < M_SIZE*M_SIZE)
 	{
 		map.countPiece(pCnt);
@@ -2672,7 +2703,7 @@ void playEposide()
 		ccmp.search_deep=4;
 		ccmp.solve(map, nplayer);
 		int val=ccmp.runSco(map, nplayer);
-		insert(val, map, nplayer);
+		insertFrame(val, map, nplayer);
 		
 		map.setPiece(sp.toMP(), nplayer);
 		if (!map.testAll(rPlayer())){
@@ -2682,7 +2713,6 @@ void playEposide()
 		else nplayer = rPlayer();
 		
 		pcnt++;
-		listsize++;
 		map.countPiece(pCnt);
 		
 		logRefrsh();
@@ -2696,17 +2726,19 @@ void trainCoeff()
 	for (;;framePoint++)
 	{
 		int nowp=framePoint % EXP_BUFFER_SIZE;
-		accuGrad();
-		if (framePoint%batch_size==0)
+		LinReg::accuGrad(expbuffer[nowp].map, expbuffer[nowp].col, expbuffer[nowp].targetV);
+		if (framePoint%LinReg::batch_size==0)
 		{
-			updateArg();
+			LinReg::updateArg();
 		}
 	}
 }
 
 void Game_BW::RunLearning()
 {
+	coeff_data.clear();
 	const int run_cnt=1000, batch_size=1;
+	LinReg::batch_size=batch_size;
 	framePoint=0;
 	pro_train=true;
 	while (pro_train)
@@ -2938,4 +2970,3 @@ int main()
 	game.RunLearning();
 	return 0;
 }
-
