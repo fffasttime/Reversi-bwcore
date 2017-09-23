@@ -14,7 +14,7 @@
 //#include "jsoncpp/json.h"
 using namespace std;
 
-#define LOG_PRINT
+//#define LOG_PRINT
 
 stringstream fout;
 #ifdef LOG_PRINT
@@ -724,6 +724,7 @@ public:
 		Ploc run_NormalRandom();
 		Ploc run_Random();
 		Ploc run_Normal();
+		Val run_NormalSco();
 		Ploc run_WinLoss();
 	};
 
@@ -751,7 +752,7 @@ public:
 		if (mpc2==map_s) return Ploc(4,1);
 		Map mpc(MP_SK);
 		if (mpc==map_s) return Ploc(7,2);*/
-		search_deep=6;
+		//search_deep=6;
 		switch (mode)
 		{
 		case Mode::exact: return run_Normal();
@@ -870,7 +871,24 @@ public:
 		#endif
 		return Ploc(maxp);
 	}
-
+	
+	Cmp_BW::Val Cmp_BW::run_NormalSco()
+	{
+		Val alpha = -FLOAT_INF;
+		Val beta = FLOAT_INF;
+		auto co1 = col_f(mcol); MP maxp;
+		for (auto p = MP_F;p<MP_E;p++)
+			if (map_s.testPiece(p, mcol))
+			{
+				Map tmap = map_s;
+				tmap.setPiece(p, mcol);
+				Val ret = -MiniMaxSearch_Normal(tmap, co1, 0, -beta, -alpha);
+				if (ret>alpha) alpha = ret, maxp = p;
+			}
+		
+		return alpha;
+	}
+	
 	int getEdgeStable(Map &map, Col col)
 	{
 		Col mcol = col - 1;
@@ -1282,7 +1300,7 @@ public:
 	*/
 	struct CoeffPack
 	{
-		short e1[59049], c52[59049], c33[19683],
+		float e1[59049], c52[59049], c33[19683],
 			e2[6561], e3[6561], e4[6561], k8[6561], k7[2187], k6[729], k5[243], k4[81],
 			wb, wodd, wmob;
 		
@@ -1314,7 +1332,7 @@ public:
 		
 		#define EVAL_FILE "reversicoeff.bin"
 		#define EVAL_FILE_S "reversicoeff_temp.bin"
-		
+		#if 0
 		void initPtnData()
 		{
 			FILE *eval_stream=fopen(EVAL_FILE, "rb");
@@ -1391,7 +1409,7 @@ public:
 			}
 			fclose(eval_stream);
 		}
-		
+		#endif
 		void clear()
 		{
 			for (int i=0;i<COEFF_PARTCNT;i++)
@@ -1421,7 +1439,7 @@ public:
 		int eval_pr=GameCoeff::PrTable[cnt[0]];
 		//if (eval_pr==10) eval_pr=9;
 		auto &pdata = coeff_data.dat[eval_pr];
-		int score=pdata.wb;
+		float score=pdata.wb;
 		
 		int cmob = getMob(map, col);
 		int codd = cnt[0]%2;
@@ -1895,7 +1913,7 @@ public:
 			Bit tcnt[3]; tmap.countPiece(tcnt);
 			return tcnt[col] - tcnt[col_f(col)];
 		}
-		return evalPtn(map, col)/256.0;
+		return evalPtn(map, col);
 		/*
 		Col co1 = col_f(col);
 		int loc_sco = 0;
@@ -1945,6 +1963,13 @@ int ptne1_[4][10],ptne2_[4][8],ptne3_[4][8],ptne4_[4][8],ptnk8_[2][8],ptnk7_[4][
 
 int mm[8][8],mcol;
 using namespace bwcore;
+
+int ptnhash(int a[], int l)
+{
+	int ha=0;
+	for (int i=0;i<l;i++) ha=ha*3+a[i];
+	return ha;
+}
 
 void mapToMM(Map &map) 
 {
@@ -2666,7 +2691,7 @@ void Game_BW::RunTests()
 	fresult<<wcnt<<'\n';
 }
 
-const int EXP_BUFFER_SIZE = 100000;
+const int EXP_BUFFER_SIZE = 20000;
 
 struct ExpBuffer
 {
@@ -2674,15 +2699,15 @@ struct ExpBuffer
 	Map map;
 	Col col;
 }expbuffer[EXP_BUFFER_SIZE];
-bool pro_train=true; int pro_listsize;
+bool pre_train=true; int pre_listsize;
 
-void insertFrame(float val, Map &map, int col)
+void insertFrame(float val, Map &map, Bit col)
 {
-	if (pro_train)
+	if (pre_train)
 	{
-		expbuffer[pro_listsize]={val,map, col};
-		pro_listsize++;
-		if (pro_listsize >= EXP_BUFFER_SIZE) pro_train=false;
+		expbuffer[pre_listsize]={val,map, col};
+		pre_listsize++;
+		if (pre_listsize >= EXP_BUFFER_SIZE) pre_train=false;
 	}
 	else
 	{
@@ -2694,15 +2719,17 @@ void insertFrame(float val, Map &map, int col)
 void Game_BW::playEposide()
 {
 	map=Map::Map_Start;
-	pcnt=4;
+	pcnt=4; nplayer=C_B;
 	Cmp_BW ccmp(1);
 	while (pcnt < M_SIZE*M_SIZE)
 	{
 		map.countPiece(pCnt);
 		Ploc sp;
 		ccmp.search_deep=4;
-		ccmp.solve(map, nplayer);
-		int val=ccmp.runSco(map, nplayer);
+		sp=ccmp.solve(map, nplayer);
+		cout<<map.toString()<<"\n"<<(int)sp.x<<(int)sp.y<<"\n\n";
+		//ccmp.set(map, nPlayer);
+		int val=ccmp.run_NormalSco();
 		insertFrame(val, map, nplayer);
 		
 		map.setPiece(sp.toMP(), nplayer);
@@ -2717,6 +2744,7 @@ void Game_BW::playEposide()
 		
 		logRefrsh();
 	}
+	system("pause");
 }
 
 ll framePoint;
@@ -2730,6 +2758,7 @@ void trainCoeff()
 		if (framePoint%LinReg::batch_size==0)
 		{
 			LinReg::updateArg();
+			break;
 		}
 	}
 }
@@ -2737,22 +2766,34 @@ void trainCoeff()
 void Game_BW::RunLearning()
 {
 	coeff_data.clear();
-	const int run_cnt=1000, batch_size=1;
+	const int run_cnt=1000, batch_size=200;
 	LinReg::batch_size=batch_size;
 	framePoint=0;
-	pro_train=true;
-	while (pro_train)
+	pre_train=true;
+	printf("pre_training...\n");
+	int percentage=0;
+	while (pre_train)
 	{
 		playEposide();
+		if (pre_listsize*100/EXP_BUFFER_SIZE > percentage)
+		{
+			percentage=pre_listsize*100/EXP_BUFFER_SIZE;
+			printf("%d%% %d\n", percentage, pre_listsize);
+		}
 	}
+	printf("pre_train ok\n");
 	
 	for (int i=1;i<=run_cnt;i++)
 	{
+		printf("iteration %d cmob[2]:%.4f\n", i, coeff_data.dat[2].wmob);
 		const int per_playcount=100;
-		for (int j=1;i<=per_playcount;i++)
+		for (int j=1;j<=per_playcount;j++)
 			playEposide();
 		
-		trainCoeff();
+		printf("learning...\n", i, coeff_data.dat[2].wmob);
+		const int per_traincount=100;
+		for (int j=1;j<=per_traincount;j++)
+			trainCoeff();
 	}
 }
 
@@ -2963,7 +3004,6 @@ void Game_BW::UserPlay()
 int main()
 {
 	logRefrsh();
-	//initPtnData();
 	//before srand(1)
 	srand(2);
 	//game.UserPlay();
