@@ -822,7 +822,7 @@ public:
 		vector<MP> declist;
 		for (auto &it : rlist) fout << (Ploc)it.second << ":" << it.first << " | ";
 		for (auto &it : rlist)
-			if (it.first>alpha - 8)
+			if (it.first>alpha - 4)
 				declist.push_back(it.second);
 		int dec = rand() % declist.size();
 		fout << "Excepting score: " << alpha << '\n';
@@ -1955,7 +1955,7 @@ public:
 
 namespace LinReg
 {
-const int le=0.001;
+const float le=0.01;
 int batch_size;
 bwcore::GameCoeff rweight;
 int ptne1[4][10],ptne2[4][8],ptne3[4][8],ptne4[4][8],ptnk8[2][8],ptnk7[4][7],ptnk6[4][6],ptnk5[4][5],ptnk4[4][4];
@@ -2385,8 +2385,8 @@ void updateArg()
 		w.wmob += rw.wmob*ee;
 		w.wodd += rw.wodd*ee;
 		w.wb += rw.wb*ee;
+		//if (k==0) cout<<w.wmob<<'\n';
 	}
-	
 	rweight.clear();
 }
 
@@ -2395,7 +2395,7 @@ void accuGrad(Map &map, int col, float mval)
 	mmap=map; mcol=col;
 	mmap.countPiece(mcnt);
 	mapToMM(mmap);
-	//cout<<mmap.toString(); 
+	
 	getptns();
 	getpartner();
 	int pe1[4],pe2[4],pe3[4],pe4[4],pk8[2],pk7[4],pk6[4],pk5[4],pk4[4];
@@ -2404,6 +2404,7 @@ void accuGrad(Map &map, int col, float mval)
 	int eval_pr=GameCoeff::PrTable[mcnt[0]];
 	auto &w=coeff_data.dat[eval_pr];
 	auto &rw=rweight.dat[eval_pr];
+	
 	for (int i=0;i<4;i++)
 	{
 		pe1[i] = ptnhash(ptne1[i], 10);
@@ -2479,6 +2480,12 @@ void accuGrad(Map &map, int col, float mval)
 	rw.wb += delta;
 	rw.wmob += delta*cmob;
 	rw.wodd += delta*codd;
+	
+	/*
+	if (mcnt[0]<5) {
+	cout<<mmap.toString(); 
+	cout<<rw.wmob<<' '<<eval_pr<<'\n';
+	system("pause");}*/
 }
 }
 
@@ -2691,13 +2698,14 @@ void Game_BW::RunTests()
 	fresult<<wcnt<<'\n';
 }
 
-const int EXP_BUFFER_SIZE = 20000;
+const int EXP_BUFFER_SIZE = 1000;
 
 struct ExpBuffer
 {
 	float targetV;
 	Map map;
 	Col col;
+	
 }expbuffer[EXP_BUFFER_SIZE];
 bool pre_train=true; int pre_listsize;
 
@@ -2726,11 +2734,12 @@ void Game_BW::playEposide()
 		map.countPiece(pCnt);
 		Ploc sp;
 		ccmp.search_deep=4;
-		sp=ccmp.solve(map, nplayer);
-		cout<<map.toString()<<"\n"<<(int)sp.x<<(int)sp.y<<"\n\n";
-		//ccmp.set(map, nPlayer);
-		int val=ccmp.run_NormalSco();
-		insertFrame(val, map, nplayer);
+		ccmp.set(map, nplayer);
+		sp=ccmp.run_NormalRandom();
+		//cout<<map.toString()<<"\n"<<(int)sp.x<<(int)sp.y<<"\n";
+		float val=ccmp.run_NormalSco();
+		//cout<<val<<"\n";
+		if (pcnt<63) insertFrame(val, map, nplayer);
 		
 		map.setPiece(sp.toMP(), nplayer);
 		if (!map.testAll(rPlayer())){
@@ -2744,29 +2753,26 @@ void Game_BW::playEposide()
 		
 		logRefrsh();
 	}
-	system("pause");
+	//system("pause");
 }
 
-ll framePoint;
+ll framePoint=0;
 
 void trainCoeff()
 {
-	for (;;framePoint++)
+	for (int i=0; i<LinReg::batch_size ; i++, framePoint++)
 	{
 		int nowp=framePoint % EXP_BUFFER_SIZE;
+		//cout<<framePoint<<' ';
 		LinReg::accuGrad(expbuffer[nowp].map, expbuffer[nowp].col, expbuffer[nowp].targetV);
-		if (framePoint%LinReg::batch_size==0)
-		{
-			LinReg::updateArg();
-			break;
-		}
 	}
+	LinReg::updateArg();
 }
 
 void Game_BW::RunLearning()
 {
 	coeff_data.clear();
-	const int run_cnt=1000, batch_size=200;
+	const int run_cnt=1000, batch_size=100;
 	LinReg::batch_size=batch_size;
 	framePoint=0;
 	pre_train=true;
@@ -2785,13 +2791,13 @@ void Game_BW::RunLearning()
 	
 	for (int i=1;i<=run_cnt;i++)
 	{
-		printf("iteration %d cmob[2]:%.4f\n", i, coeff_data.dat[2].wmob);
-		const int per_playcount=100;
+		printf("iteration %d cmob[1]:%.4f\n", i, coeff_data.dat[1].wmob);
+		const int per_playcount=10;
 		for (int j=1;j<=per_playcount;j++)
 			playEposide();
 		
-		printf("learning...\n", i, coeff_data.dat[2].wmob);
-		const int per_traincount=100;
+		printf("learning...\n", i);
+		const int per_traincount=500;
 		for (int j=1;j<=per_traincount;j++)
 			trainCoeff();
 	}
