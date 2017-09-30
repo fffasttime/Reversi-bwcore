@@ -659,7 +659,7 @@ public:
 			exact = 1,
 			abnormal = 2
 		};
-		int search_deep = 14;
+		int search_deep = 4;
 	private:
 		Mode mode;
 		typedef float Val;
@@ -722,6 +722,7 @@ public:
 		Ploc run_Exact();
 		Val run_ExactSco();
 		Ploc run_NormalRandom();
+		Ploc run_NormalRandomEpo();
 		Ploc run_Random();
 		Ploc run_Normal();
 		Val run_NormalSco();
@@ -829,6 +830,15 @@ public:
 		fout << "search info:" << search_deep << ' ' << search_cnt << "  TL:" << clock() - time_s << " ms" << '\n';
 		return Ploc(declist[dec]);
 	}
+	Ploc Cmp_BW::run_NormalRandomEpo()
+	{
+		const float eposlon=0.05; //eposlon-greedy argument
+		int r=rand()%1000;
+		if (r<1000*eposlon)
+			return run_Random();
+		return run_Normal();
+	}
+	
 	//#define DEBUG_TREE
 	#ifdef DEBUG_TREE
 	Tree* debugtree;
@@ -2482,10 +2492,12 @@ void accuGrad(Map &map, int col, float mval)
 	rw.wodd += delta*codd;
 	
 	/*
-	if (mcnt[0]<5) {
+	if (eval_pr>7 &delta!=0)
+	{
 	cout<<mmap.toString(); 
-	cout<<rw.wmob<<' '<<eval_pr<<'\n';
-	system("pause");}*/
+	cout<<delta<<' '<<eval_pr<<'\n';
+	system("pause");
+	}*/
 }
 }
 
@@ -2587,27 +2599,27 @@ public:
 void Game_BW::iPrint()
 {
 	gotoXY({0,0});
-	printf("?X"); for (int i = 1; i < M_SIZE; i++) printf("?T?j"); printf("?T?[\n");
+	printf("╔"); for (int i = 1; i < M_SIZE; i++) printf("═╦"); printf("═╗\n");
 	for (Bit i = 0; i < M_SIZE; i++)
 	{
-		printf("?U");
+		printf("║");
 		for (Bit j = 0; j < M_SIZE; j++)
 		{
-			if (map[{i, j}] == C_W) printf("??");
-			else if (map[{i, j}] == C_B) printf("??");
+			if (map[{i, j}] == C_W) printf("○");
+			else if (map[{i, j}] == C_B) printf("●");
 			else printf("  ");
-			printf("?U");
+			printf("║");
 		}
 		printf("\n");
 		if (i < M_SIZE - 1)
 		{
-			printf("?d");
-			for (int j = 0; j < 7; j++) printf("?T?p"); printf("?T?g");
+			printf("╠");
+			for (int j = 0; j < 7; j++) printf("═╬"); printf("═╣");
 		}
 		else
 		{
-			printf("?^");
-			for (int j = 0; j < 7; j++) printf("?T?m"); printf("?T?a");
+			printf("╚");
+			for (int j = 0; j < 7; j++) printf("═╩"); printf("═╝");
 		}
 		printf("\n");
 	}
@@ -2615,9 +2627,9 @@ void Game_BW::iPrint()
 	for (Bit i = 0; i < M_SIZE; i++)
 	{
 		for (Bit j = 0; j < M_SIZE; j++)
-			if (map[{i, j}] == C_W) fout<<"??";
-			else if (map[{i, j}] == C_B) fout<<"??";
-			else fout<<"??";
+			if (map[{i, j}] == C_W) fout<<"○";
+			else if (map[{i, j}] == C_B) fout<<"●";
+			else fout<<"·";
 		fout<<'\n';
 	}/*
 	fout<<"{\n";
@@ -2637,7 +2649,7 @@ void Game_BW::showCanDo()
 	for (auto &p : clist)
 	{
 		gotoXY(PlocToMloc(Ploc(p)));
-		printf("??");
+		printf("·");
 	}
 }
 
@@ -2698,17 +2710,52 @@ void Game_BW::RunTests()
 	fresult<<wcnt<<'\n';
 }
 
-const int EXP_BUFFER_SIZE = 1000;
+const int EXP_BUFFER_SIZE = 50000;
 
 struct ExpBuffer
 {
 	float targetV;
 	Map map;
 	Col col;
-	
+	string tostring()
+	{
+		string s;
+		stringstream ss;
+		ss<<targetV<<' '<<map.m[0]<<' '<<map.m[1]<<' '<<(int)col;
+		getline(ss,s);
+		return s;
+	}
+	void setbystring(string &s)
+	{
+		stringstream ss;
+		ss<<s;
+		int t;
+		ss>>targetV>>map.m[0]>>map.m[1]>>t;
+		col=t;
+	}
 }expbuffer[EXP_BUFFER_SIZE];
 bool pre_train=true; int pre_listsize;
 
+void backupExpBuffer()
+{
+	ofstream fbuffer("expbuffer.txt");
+	for (int i=0;i<EXP_BUFFER_SIZE;i++)
+		fbuffer<<expbuffer[i].tostring()<<'\n';
+	fbuffer.close();
+	cout<<"buffer saved\n";
+}
+
+void loadExpBuffer()
+{
+	ifstream fbuffer("expbuffer.txt");
+	for (int i=0;i<EXP_BUFFER_SIZE;i++)
+	{
+		string s;
+		getline(fbuffer,s);
+		expbuffer[i].setbystring(s);
+	}
+	fbuffer.close();
+}
 void insertFrame(float val, Map &map, Bit col)
 {
 	if (pre_train)
@@ -2735,12 +2782,11 @@ void Game_BW::playEposide()
 		Ploc sp;
 		ccmp.search_deep=4;
 		ccmp.set(map, nplayer);
-		sp=ccmp.run_NormalRandom();
+		sp=ccmp.run_NormalRandomEpo();
 		//cout<<map.toString()<<"\n"<<(int)sp.x<<(int)sp.y<<"\n";
 		float val=ccmp.run_NormalSco();
 		//cout<<val<<"\n";
 		if (pcnt<63) insertFrame(val, map, nplayer);
-		
 		map.setPiece(sp.toMP(), nplayer);
 		if (!map.testAll(rPlayer())){
 			if (!map.testAll(nplayer))
@@ -2772,9 +2818,10 @@ void trainCoeff()
 void Game_BW::RunLearning()
 {
 	coeff_data.clear();
-	const int run_cnt=1000, batch_size=100;
+	const int run_cnt=10, batch_size=200;
 	LinReg::batch_size=batch_size;
 	framePoint=0;
+	#if 0 //USE PRE_TRAIN
 	pre_train=true;
 	printf("pre_training...\n");
 	int percentage=0;
@@ -2788,18 +2835,29 @@ void Game_BW::RunLearning()
 		}
 	}
 	printf("pre_train ok\n");
+	backupExpBuffer();
+	#else
+	pre_train=false;
+	loadExpBuffer();
+	printf("load pre_train ok\n");
+	#endif
 	
 	for (int i=1;i<=run_cnt;i++)
 	{
-		printf("iteration %d cmob[1]:%.4f\n", i, coeff_data.dat[1].wmob);
-		const int per_playcount=10;
-		for (int j=1;j<=per_playcount;j++)
-			playEposide();
+		printf("iteration %d\ncmob ", i);
 		
 		printf("learning...\n", i);
 		const int per_traincount=500;
 		for (int j=1;j<=per_traincount;j++)
 			trainCoeff();
+		
+		for (int i=0;i<10;i++)
+			printf("%d:%.4f ",i, coeff_data.dat[i].wmob);
+		printf("\n");
+		
+		const int per_playcount=100;
+		for (int j=1;j<=per_playcount;j++)
+			playEposide();
 	}
 }
 
@@ -2833,8 +2891,8 @@ void Game_BW::Play()
 		}
 		map.setPiece(sp.toMP(), nplayer);
 		gotoXY(PlocToMloc(sp));
-		if (nplayer == C_W) printf("??");
-		else if (nplayer == C_B) printf("??");
+		if (nplayer == C_W) printf("○");
+		else if (nplayer == C_B) printf("●");
 		Sleep(1);
 		if (!map.testAll(rPlayer())){
 			if (!map.testAll(nplayer))
@@ -2865,7 +2923,7 @@ void Game_BW::End()
 	else
 		printf(" Winner:Black");
 	gotoXY({0,20});
-	printf("[????]");
+	printf("[返回]");
 	while (1)
 	{
 		Ploc p=getCurClick();
@@ -2878,32 +2936,32 @@ void Game_BW::writeSelect(int col)
 	if (col==C_B)
 	{
 		gotoXY({32,11}); printf("                ");
-		if (sel_b==-1) {gotoXY({35,11}); printf("????????");}
+		if (sel_b==-1) {gotoXY({35,11}); printf("黑色：玩家");}
 		else
 		{
-			gotoXY({32,11}); printf("?????????");
+			gotoXY({32,11}); printf("黑色：电脑");
 			switch(sel_b)
 			{
-				case 0:printf("(????)"); break;
-				case 1:printf("(????)"); break;
-				case 2:printf("(????)"); break;
-				case 3:printf("(????)"); break;
+				case 0:printf("(测试)"); break;
+				case 1:printf("(测试)"); break;
+				case 2:printf("(测试)"); break;
+				case 3:printf("(测试)"); break;
 			}
 		}
 	}
 	else if (col==C_W)
 	{
 		gotoXY({32,12}); printf("                 ");
-		if (sel_w==-1) {gotoXY({35,12}); printf("????????");}
+		if (sel_w==-1) {gotoXY({35,12}); printf("白色：玩家");}
 		else
 		{
-			gotoXY({32,12}); printf("?????????");
+			gotoXY({32,12}); printf("白色：电脑");
 			switch(sel_w)
 			{
-				case 0:printf("(????)"); break;
-				case 1:printf("(????)"); break;
-				case 2:printf("(????)"); break;
-				case 3:printf("(????)"); break;
+				case 0:printf("(测试)"); break;
+				case 1:printf("(测试)"); break;
+				case 2:printf("(测试)"); break;
+				case 3:printf("(测试)"); break;
 			}
 		}
 	}
@@ -2933,19 +2991,19 @@ void Game_BW::showAbout()
 int Game_BW::splash()
 {
 	gotoXY({0,0});
-	printf("?X"); for (int i = 1; i < winsize.X/2-1; i++) printf("?T"); printf("?[");
+	printf("╔"); for (int i = 1; i < winsize.X/2-1; i++) printf("═"); printf("╗");
 	for (int i=1;i<winsize.Y-2;i++)
 	{
-		printf("?U");
+		printf("║");
 		for (int j=1;j<winsize.X/2-1;j++)
 			printf("  ");
-		printf("?U");
+		printf("║");
 	}
-	printf("?^"); for (int i = 1; i < winsize.X/2-1; i++) printf("?T"); printf("?a");
+	printf("╚"); for (int i = 1; i < winsize.X/2-1; i++) printf("═"); printf("╝");
 	gotoXY({30,11}); printf("               ");
-	gotoXY({32,8}); printf("?????   1.3");
-	gotoXY({36,10}); printf(">>???<<");
-	gotoXY({34,13}); printf("????    ???");
+	gotoXY({32,8}); printf("黑白棋   1.3");
+	gotoXY({36,10}); printf(">>开始<<");
+	gotoXY({34,13}); printf("关于    退出");
 	sel_b=-1; writeSelect(C_B);
 	sel_w=-1; writeSelect(C_W);
 	gotoXY({0,0});
@@ -3012,7 +3070,7 @@ int main()
 	logRefrsh();
 	//before srand(1)
 	srand(2);
-	//game.UserPlay();
 	game.RunLearning();
+	game.UserPlay();
 	return 0;
 }
