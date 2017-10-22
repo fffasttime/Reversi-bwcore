@@ -10,6 +10,8 @@
 #include <ctime>
 #include <vector>
 #include <algorithm>
+#include <random>
+#include <functional>
 #include <windows.h>
 //#include "jsoncpp/json.h"
 using namespace std;
@@ -56,6 +58,25 @@ inline void setbit(ull &x,ull c,Bit p)
 inline ull lowbit(ull x)
 {
 	return x&(-x);
+}
+
+mt19937 random(0);
+uniform_real_distribution<float> random_dis0_1(0,1);
+auto random0_1=std::bind(random_dis0_1,random);
+
+//select a item with probablity <prob>, sum of <prob> should be 1
+int randomselect(const vector<float> &prob)
+{
+	float r=random0_1();
+	for (size_t i=0;i<prob.size();i++)
+		if (r<prob[i])
+			return i;
+		else
+			r-=prob[i];
+	for (size_t i=0;i<prob.size();i++)
+		cout<<prob[i]<<' ';
+	assert(0);
+	return 0;
 }
 
 /*
@@ -723,6 +744,7 @@ public:
 		Val run_ExactSco();
 		Ploc run_NormalRandom();
 		Ploc run_NormalRandomEpo();
+		void run_NormalScoList(vector<pair<Ploc, Val>> &list);
 		Ploc run_Random();
 		Ploc run_Normal();
 		Val run_NormalSco();
@@ -808,9 +830,8 @@ public:
 	{
 		fout << "Now score: " << getSceneVal(map_s, mcol) << '\n';
 		Val alpha = -FLOAT_INF;
-		Val beta = FLOAT_INF;
 		vector<pair<Val, MP>> rlist;
-		auto co1 = col_f(mcol); MP maxp;
+		auto co1 = col_f(mcol);
 		for (auto p = MP_F;p<MP_E;p++)
 			if (map_s.testPiece(p, mcol))
 			{
@@ -818,12 +839,12 @@ public:
 				tmap.setPiece(p, mcol);
 				Val ret = -MiniMaxSearch_Normal(tmap, co1, 0, -FLOAT_INF, FLOAT_INF);
 				rlist.push_back(make_pair(ret, p));
-				if (ret>alpha) alpha = ret, maxp = p;
+				if (ret>alpha) alpha = ret;
 			}
 		vector<MP> declist;
 		for (auto &it : rlist) fout << (Ploc)it.second << ":" << it.first << " | ";
 		for (auto &it : rlist)
-			if (it.first>alpha - 4)
+			if (it.first>alpha - 4) //-4 maybe adjust
 				declist.push_back(it.second);
 		int dec = rand() % declist.size();
 		fout << "Excepting score: " << alpha << '\n';
@@ -832,11 +853,36 @@ public:
 	}
 	Ploc Cmp_BW::run_NormalRandomEpo()
 	{
+	#if 0 //eposlon-greedy
 		const float eposlon=0.05; //eposlon-greedy argument
 		int r=rand()%1000;
 		if (r<1000*eposlon)
 			return run_Random();
+		search_deep=2;
 		return run_Normal();
+	#else //exp select
+		const float tempe=4.0; //temperature argument
+		vector<pair<Ploc, Val>> plist;
+		search_deep=2;
+		run_NormalScoList(plist);
+		vector<Val> sco; Val maxc=-10000,sum=0;
+		assert(plist.size());
+		for (auto &it:plist)
+		{
+			sco.push_back(it.second);
+			if (it.second>maxc) maxc=it.second;
+		}
+		for (auto &it:sco) //transfer
+		{
+			it-=maxc;
+			it/=tempe;
+			sum+=exp(it);
+		}
+		for (auto &it:sco) //softmax
+			it=exp(it)/sum;
+		int select=randomselect(sco);
+		return plist[select].first;
+	#endif
 	}
 	
 	//#define DEBUG_TREE
@@ -886,22 +932,41 @@ public:
 	{
 		Val alpha = -FLOAT_INF;
 		Val beta = FLOAT_INF;
-		auto co1 = col_f(mcol); MP maxp;
+		auto co1 = col_f(mcol);
 		for (auto p = MP_F;p<MP_E;p++)
 			if (map_s.testPiece(p, mcol))
 			{
 				Map tmap = map_s;
 				tmap.setPiece(p, mcol);
 				Val ret = -MiniMaxSearch_Normal(tmap, co1, 0, -beta, -alpha);
-				if (ret>alpha) alpha = ret, maxp = p;
+				if (ret>alpha) alpha = ret;
 			}
 		
 		return alpha;
 	}
 	
+	//get each postion score of, slower than run_normal
+	void Cmp_BW::run_NormalScoList(vector<pair<Ploc, Cmp_BW::Val>> &list)
+	{
+		Val alpha = -FLOAT_INF;
+		Val beta = FLOAT_INF;
+		auto co1 = col_f(mcol);
+		for (auto p = MP_F;p<MP_E;p++)
+			if (map_s.testPiece(p, mcol))
+			{
+				Map tmap = map_s;
+				tmap.setPiece(p, mcol);
+				Val ret = -MiniMaxSearch_Normal(tmap, co1, 0, -beta, -alpha);
+				list.push_back({Ploc(p),ret});
+			}
+		/*
+		sort(list.begin(),list.end(),
+			[](const pair<Ploc, Val> &a, const pair<Ploc, Val> &b)
+			{return a.second>b.second;});*/
+	}
+	
 	int getEdgeStable(Map &map, Col col)
 	{
-		Col mcol = col - 1;
 		int cnt = 0;
 		if (map[0] == col)
 		{
@@ -1093,14 +1158,14 @@ public:
 		search_deep = cnt_s[0];
 		Val alpha = -FLOAT_INF;
 		Val beta = FLOAT_INF;
-		auto co1 = col_f(mcol); MP maxp;
+		auto co1 = col_f(mcol);
 		for (auto p = MP_F;p<MP_E;p++)
 			if (map_s.testPiece(p, mcol))
 			{
 				Map tmap = map_s;
 				tmap.setPiece(p, mcol);
 				Val ret = -MiniMaxSearch_Exact(tmap, co1, 0, -beta, -alpha);
-				if (ret>alpha) alpha = ret, maxp = p;
+				if (ret>alpha) alpha = ret;
 			}
 		return alpha;
 	}
@@ -1205,7 +1270,6 @@ public:
 		if (ret>alpha) alpha=ret;
 		}
 		}//*/
-		MP maxp;
 		for (auto p = MP_F;p<MP_E;p++)
 			if (fmap.testPiece(p, col))
 			{
@@ -1234,7 +1298,7 @@ public:
 				 }}//*/
 					return beta;
 				}
-				if (ret >= alpha) alpha = ret, maxp = p;
+				if (ret >= alpha) alpha = ret;
 				if (!cando) cando = true;
 			}
 		if (!cando)
@@ -1342,6 +1406,7 @@ public:
 		
 		#define EVAL_FILE "reversicoeff.bin"
 		#define EVAL_FILE_S "reversicoeff_temp.bin"
+		#define EVAL_FILE_T "reversicoeff_temp.txt"
 		#if 0
 		void initPtnData()
 		{
@@ -1414,6 +1479,83 @@ public:
 					writeShort(eval_stream,pdata.k5[j]);
 				for (int j=0;j<81;j++)
 					writeShort(eval_stream,pdata.k4[j]);
+				cout<<pdata.wb<<'\n';
+				cout<<pdata.k4[80]<<'\n';
+			}
+			fclose(eval_stream);
+		}
+		#else
+		void initPtnData()
+		{
+			FILE *eval_stream=fopen(EVAL_FILE_T, "r");
+			short part_cnt; fscanf(eval_stream,"%hd",&part_cnt);
+			assert(part_cnt == COEFF_PARTCNT);
+			for (int i=0;i<part_cnt;i++)
+			{
+				auto &pdata=dat[i];
+				fscanf(eval_stream,"%f",&pdata.wb);
+				fscanf(eval_stream,"%f",&pdata.wodd);
+				fscanf(eval_stream,"%f",&pdata.wmob);
+				for (int j=0;j<59049;j++)
+					fscanf(eval_stream,"%f",&pdata.e1[j]);
+				for (int j=0;j<59049;j++)
+					fscanf(eval_stream,"%f",&pdata.c52[j]);
+				for (int j=0;j<19683;j++)
+					fscanf(eval_stream,"%f",&pdata.c33[j]);
+				for (int j=0;j<6561;j++)
+					fscanf(eval_stream,"%f",&pdata.e2[j]);
+				for (int j=0;j<6561;j++)
+					fscanf(eval_stream,"%f",&pdata.e3[j]);
+				for (int j=0;j<6561;j++)
+					fscanf(eval_stream,"%f",&pdata.e4[j]);
+				for (int j=0;j<6561;j++)
+					fscanf(eval_stream,"%f",&pdata.k8[j]);
+				for (int j=0;j<2187;j++)
+					fscanf(eval_stream,"%f",&pdata.k7[j]);
+				for (int j=0;j<729;j++)
+					fscanf(eval_stream,"%f",&pdata.k6[j]);
+				for (int j=0;j<243;j++)
+					fscanf(eval_stream,"%f",&pdata.k5[j]);
+				for (int j=0;j<81;j++)
+					fscanf(eval_stream,"%f",&pdata.k4[j]);
+				cout<<pdata.wb<<'\n';
+				cout<<pdata.k4[80]<<'\n';
+			}
+			fclose(eval_stream);
+		}
+		
+		void savePtnData()
+		{
+			FILE *eval_stream=fopen(EVAL_FILE_T, "w");
+			short part_cnt=COEFF_PARTCNT; fprintf(eval_stream,"%d ",part_cnt);
+			for (int i=0;i<part_cnt;i++)
+			{
+				auto &pdata=dat[i];
+				fprintf(eval_stream,"%f ",pdata.wb);
+				fprintf(eval_stream,"%f ",pdata.wodd);
+				fprintf(eval_stream,"%f ",pdata.wmob);
+				for (int j=0;j<59049;j++)
+					fprintf(eval_stream,"%f ",pdata.e1[j]);
+				for (int j=0;j<59049;j++)
+					fprintf(eval_stream,"%f ",pdata.c52[j]);
+				for (int j=0;j<19683;j++)
+					fprintf(eval_stream,"%f ",pdata.c33[j]);
+				for (int j=0;j<6561;j++)
+					fprintf(eval_stream,"%f ",pdata.e2[j]);
+				for (int j=0;j<6561;j++)
+					fprintf(eval_stream,"%f ",pdata.e3[j]);
+				for (int j=0;j<6561;j++)
+					fprintf(eval_stream,"%f ",pdata.e4[j]);
+				for (int j=0;j<6561;j++)
+					fprintf(eval_stream,"%f ",pdata.k8[j]);
+				for (int j=0;j<2187;j++)
+					fprintf(eval_stream,"%f ",pdata.k7[j]);
+				for (int j=0;j<729;j++)
+					fprintf(eval_stream,"%f ",pdata.k6[j]);
+				for (int j=0;j<243;j++)
+					fprintf(eval_stream,"%f ",pdata.k5[j]);
+				for (int j=0;j<81;j++)
+					fprintf(eval_stream,"%f ",pdata.k4[j]);
 				cout<<pdata.wb<<'\n';
 				cout<<pdata.k4[80]<<'\n';
 			}
@@ -1965,7 +2107,7 @@ public:
 
 namespace LinReg
 {
-const float le=0.01;
+const float le=0.2;
 int batch_size;
 bwcore::GameCoeff rweight;
 int ptne1[4][10],ptne2[4][8],ptne3[4][8],ptne4[4][8],ptnk8[2][8],ptnk7[4][7],ptnk6[4][6],ptnk5[4][5],ptnk4[4][4];
@@ -2373,6 +2515,8 @@ void updateArg()
 	float ee=le/batch_size;
 	for (int k=0;k<COEFF_PARTCNT;k++)
 	{
+		if (k>2) ee/=1.5;
+		if (k>5) ee/=1.5;
 		auto &w=coeff_data.dat[k];
 		auto &rw=rweight.dat[k];
 		for (int i = 0;i < 59049;i++)
@@ -2460,7 +2604,10 @@ void accuGrad(Map &map, int col, float mval)
 	sigma += w.wmob*cmob;
 	sigma += w.wodd*codd;
 
-	float mse=(sigma-mval)*(sigma-mval)/2, delta=mval-sigma;
+	//float mse=(sigma-mval)*(sigma-mval)/2;
+	float delta=mval-sigma;
+	if (delta>10) delta=10+(delta-10)/3;
+	if (delta<-10) delta=-10-(delta+10)/3;
 	sse+=fabs(delta);
 	for (int i=0;i<4;i++)
 	{
@@ -2526,7 +2673,7 @@ void minit()
 	for (int i=0;i<winsize.Y;i++) 
 		for (int j=0;j<winsize.X;j++)
 			putchar(' ');
-	gotoXY({30,11}); printf("?????   1.3");
+	gotoXY({30,11}); printf("ºÚ°×Æå   1.3");
 	Sleep(400);
 }
 
@@ -2538,10 +2685,10 @@ void mexit()
 
 Ploc getCurClick()
 {
-	CONSOLE_SCREEN_BUFFER_INFO bInfo;
+	//CONSOLE_SCREEN_BUFFER_INFO bInfo;
 	INPUT_RECORD    mouseRec;
 	DWORD           res;
-	COORD           crPos, crHome = { 0, 0 };
+	COORD           crPos;//COORD crHome = { 0, 0 };
 	while (1)
 	{
 		ReadConsoleInput(hIn, &mouseRec, 1, &res);
@@ -2571,10 +2718,10 @@ private:
 	Ploc MlocToPloc(const Ploc &p){
 		if (p.y >= 4 * M_SIZE || p.x >= 2 * M_SIZE ||
 			p.y % 4 == 0 || p.y % 4 == 1 || p.x % 2 == 0) return{ -1,-1 };
-		return{ p.x / 2,p.y / 4 };
+		return{ Bit(p.x / 2), Bit(p.y / 4) };
 	}
 	Ploc PlocToMloc(const Ploc &p){
-		return{ p.y * 4 + 2,p.x * 2 + 1 };
+		return{ Bit(p.y * 4 + 2), Bit(p.x * 2 + 1) };
 	}
 	int rPlayer(){
 		if (nplayer == C_B) return C_W;
@@ -2599,27 +2746,27 @@ public:
 void Game_BW::iPrint()
 {
 	gotoXY({0,0});
-	printf("â•”"); for (int i = 1; i < M_SIZE; i++) printf("â•â•¦"); printf("â•â•—\n");
+	printf("¨X"); for (int i = 1; i < M_SIZE; i++) printf("¨T¨j"); printf("¨T¨[\n");
 	for (Bit i = 0; i < M_SIZE; i++)
 	{
-		printf("â•‘");
+		printf("¨U");
 		for (Bit j = 0; j < M_SIZE; j++)
 		{
-			if (map[{i, j}] == C_W) printf("â—‹");
-			else if (map[{i, j}] == C_B) printf("â—");
+			if (map[{i, j}] == C_W) printf("¡ð");
+			else if (map[{i, j}] == C_B) printf("¡ñ");
 			else printf("  ");
-			printf("â•‘");
+			printf("¨U");
 		}
 		printf("\n");
 		if (i < M_SIZE - 1)
 		{
-			printf("â• ");
-			for (int j = 0; j < 7; j++) printf("â•â•¬"); printf("â•â•£");
+			printf("¨d");
+			for (int j = 0; j < 7; j++) printf("¨T¨p"); printf("¨T¨g");
 		}
 		else
 		{
-			printf("â•š");
-			for (int j = 0; j < 7; j++) printf("â•â•©"); printf("â•â•");
+			printf("¨^");
+			for (int j = 0; j < 7; j++) printf("¨T¨m"); printf("¨T¨a");
 		}
 		printf("\n");
 	}
@@ -2627,9 +2774,9 @@ void Game_BW::iPrint()
 	for (Bit i = 0; i < M_SIZE; i++)
 	{
 		for (Bit j = 0; j < M_SIZE; j++)
-			if (map[{i, j}] == C_W) fout<<"â—‹";
-			else if (map[{i, j}] == C_B) fout<<"â—";
-			else fout<<"Â·";
+			if (map[{i, j}] == C_W) fout<<"¡ð";
+			else if (map[{i, j}] == C_B) fout<<"¡ñ";
+			else fout<<"¡¤";
 		fout<<'\n';
 	}/*
 	fout<<"{\n";
@@ -2649,7 +2796,7 @@ void Game_BW::showCanDo()
 	for (auto &p : clist)
 	{
 		gotoXY(PlocToMloc(Ploc(p)));
-		printf("Â·");
+		printf("¡¤");
 	}
 }
 
@@ -2710,7 +2857,7 @@ void Game_BW::RunTests()
 	fresult<<wcnt<<'\n';
 }
 
-const int EXP_BUFFER_SIZE = 50000;
+const int EXP_BUFFER_SIZE = 6000;
 
 struct ExpBuffer
 {
@@ -2766,7 +2913,12 @@ void insertFrame(float val, Map &map, Bit col)
 	}
 	else
 	{
+	#if 0 //use expbuffer
 		int sr=rand()*rand() % EXP_BUFFER_SIZE;
+	#else //inert by order
+		int sr=pre_listsize % EXP_BUFFER_SIZE;
+		pre_listsize++;
+	#endif
 		expbuffer[sr]={val,map, col};
 	}
 }
@@ -2774,16 +2926,16 @@ void insertFrame(float val, Map &map, Bit col)
 void Game_BW::playEposide()
 {
 	map=Map::Map_Start;
-	pcnt=4; nplayer=C_B;
+	pcnt=4; nplayer=rand()%2+1;
 	Cmp_BW ccmp(1);
 	while (pcnt < M_SIZE*M_SIZE)
 	{
 		map.countPiece(pCnt);
 		Ploc sp;
-		ccmp.search_deep=4;
 		ccmp.set(map, nplayer);
 		sp=ccmp.run_NormalRandomEpo();
 		//cout<<map.toString()<<"\n"<<(int)sp.x<<(int)sp.y<<"\n";
+		ccmp.search_deep=4;
 		float val=ccmp.run_NormalSco();
 		//cout<<val<<"\n";
 		if (pcnt<63) insertFrame(val, map, nplayer);
@@ -2815,13 +2967,23 @@ void trainCoeff()
 	LinReg::updateArg();
 }
 
+void statvalue(int i)
+{
+	auto &pdataf=coeff_data.dat[i];
+	float cc=0;
+	for (int j=0;j<59049;j++)
+		cc+=fabs(pdataf.e1[j]);
+	cout<<cc<<' ';
+	//cc=0;
+}
+
 void Game_BW::RunLearning()
 {
 	coeff_data.clear();
-	const int run_cnt=10, batch_size=200;
+	const int run_cnt=100, batch_size=4000;
 	LinReg::batch_size=batch_size;
 	framePoint=0;
-	#if 0 //USE PRE_TRAIN
+#if 0 //USE PRE_TRAIN
 	pre_train=true;
 	printf("pre_training...\n");
 	int percentage=0;
@@ -2836,23 +2998,23 @@ void Game_BW::RunLearning()
 	}
 	printf("pre_train ok\n");
 	backupExpBuffer();
-	#else
+#else
 	pre_train=false;
 	loadExpBuffer();
 	printf("load pre_train ok\n");
-	#endif
+#endif
 	
 	for (int i=1;i<=run_cnt;i++)
 	{
-		printf("iteration %d\ncmob ", i);
+		printf("iteration %d\n", i);
 		
-		printf("learning...\n", i);
-		const int per_traincount=500;
+		printf("learning...\ncmob ");
+		const int per_traincount=100;
 		for (int j=1;j<=per_traincount;j++)
 			trainCoeff();
 		
-		for (int i=0;i<10;i++)
-			printf("%d:%.4f ",i, coeff_data.dat[i].wmob);
+		for (int i=0;i<10;i++){
+			printf("%d:%.4f ",i, coeff_data.dat[i].wmob);statvalue(i);}
 		printf("\n");
 		
 		const int per_playcount=100;
@@ -2891,8 +3053,8 @@ void Game_BW::Play()
 		}
 		map.setPiece(sp.toMP(), nplayer);
 		gotoXY(PlocToMloc(sp));
-		if (nplayer == C_W) printf("â—‹");
-		else if (nplayer == C_B) printf("â—");
+		if (nplayer == C_W) printf("¡ð");
+		else if (nplayer == C_B) printf("¡ñ");
 		Sleep(1);
 		if (!map.testAll(rPlayer())){
 			if (!map.testAll(nplayer))
@@ -2923,7 +3085,7 @@ void Game_BW::End()
 	else
 		printf(" Winner:Black");
 	gotoXY({0,20});
-	printf("[è¿”å›ž]");
+	printf("[·µ»Ø]");
 	while (1)
 	{
 		Ploc p=getCurClick();
@@ -2936,32 +3098,32 @@ void Game_BW::writeSelect(int col)
 	if (col==C_B)
 	{
 		gotoXY({32,11}); printf("                ");
-		if (sel_b==-1) {gotoXY({35,11}); printf("é»‘è‰²ï¼šçŽ©å®¶");}
+		if (sel_b==-1) {gotoXY({35,11}); printf("ºÚÉ«£ºÍæ¼Ò");}
 		else
 		{
-			gotoXY({32,11}); printf("é»‘è‰²ï¼šç”µè„‘");
+			gotoXY({32,11}); printf("ºÚÉ«£ºµçÄÔ");
 			switch(sel_b)
 			{
-				case 0:printf("(æµ‹è¯•)"); break;
-				case 1:printf("(æµ‹è¯•)"); break;
-				case 2:printf("(æµ‹è¯•)"); break;
-				case 3:printf("(æµ‹è¯•)"); break;
+				case 0:printf("(²âÊÔ)"); break;
+				case 1:printf("(²âÊÔ)"); break;
+				case 2:printf("(²âÊÔ)"); break;
+				case 3:printf("(²âÊÔ)"); break;
 			}
 		}
 	}
 	else if (col==C_W)
 	{
 		gotoXY({32,12}); printf("                 ");
-		if (sel_w==-1) {gotoXY({35,12}); printf("ç™½è‰²ï¼šçŽ©å®¶");}
+		if (sel_w==-1) {gotoXY({35,12}); printf("°×É«£ºÍæ¼Ò");}
 		else
 		{
-			gotoXY({32,12}); printf("ç™½è‰²ï¼šç”µè„‘");
+			gotoXY({32,12}); printf("°×É«£ºµçÄÔ");
 			switch(sel_w)
 			{
-				case 0:printf("(æµ‹è¯•)"); break;
-				case 1:printf("(æµ‹è¯•)"); break;
-				case 2:printf("(æµ‹è¯•)"); break;
-				case 3:printf("(æµ‹è¯•)"); break;
+				case 0:printf("(²âÊÔ)"); break;
+				case 1:printf("(²âÊÔ)"); break;
+				case 2:printf("(²âÊÔ)"); break;
+				case 3:printf("(²âÊÔ)"); break;
 			}
 		}
 	}
@@ -2991,19 +3153,19 @@ void Game_BW::showAbout()
 int Game_BW::splash()
 {
 	gotoXY({0,0});
-	printf("â•”"); for (int i = 1; i < winsize.X/2-1; i++) printf("â•"); printf("â•—");
+	printf("¨X"); for (int i = 1; i < winsize.X/2-1; i++) printf("¨T"); printf("¨[");
 	for (int i=1;i<winsize.Y-2;i++)
 	{
-		printf("â•‘");
+		printf("¨U");
 		for (int j=1;j<winsize.X/2-1;j++)
 			printf("  ");
-		printf("â•‘");
+		printf("¨U");
 	}
-	printf("â•š"); for (int i = 1; i < winsize.X/2-1; i++) printf("â•"); printf("â•");
+	printf("¨^"); for (int i = 1; i < winsize.X/2-1; i++) printf("¨T"); printf("¨a");
 	gotoXY({30,11}); printf("               ");
-	gotoXY({32,8}); printf("é»‘ç™½æ£‹   1.3");
-	gotoXY({36,10}); printf(">>å¼€å§‹<<");
-	gotoXY({34,13}); printf("å…³äºŽ    é€€å‡º");
+	gotoXY({32,8}); printf("ºÚ°×Æå   1.3");
+	gotoXY({36,10}); printf(">>¿ªÊ¼<<");
+	gotoXY({34,13}); printf("¹ØÓÚ    ÍË³ö");
 	sel_b=-1; writeSelect(C_B);
 	sel_w=-1; writeSelect(C_W);
 	gotoXY({0,0});
@@ -3070,7 +3232,9 @@ int main()
 	logRefrsh();
 	//before srand(1)
 	srand(2);
+	random.seed(2);
 	game.RunLearning();
+	coeff_data.savePtnData();
 	game.UserPlay();
 	return 0;
 }
