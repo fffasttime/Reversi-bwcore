@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>ReversiBoard-Hex</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+    .cell{
+        width: 50px;
+        height: 50px;
+    }
+    .black{
+        background-color: #000000
+    }
+    .white{
+        background-color: #FFFFFF
+    }
+    </style>
+</head>
+<body>
+    <table id="board_occupy" border="1">
+    </table>
+    <p>
+    occupy:&nbsp<input type="text" id="hex_occupy"/>
+    </p>
+    <script src="https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js"></script>
+    <script>
+    var mask_occupy0=0, mask_occupy1=0;
+    for (var i=0;i<8;i++){
+        $("#board_occupy").append("<tr></tr>");
+        for (var j=0;j<8;j++){
+            $("#board_occupy").children().eq(0).children().eq(i).append("<td class='cell'/>");
+        }
+    }
+    $(".cell").mousedown(function(){
+        var x=$(this).parent().index();
+        var y=$(this).index();
+        var p=x*8+y, r;
+        if (p>=32){
+            mask_occupy1=mask_occupy1^(1<<(p-32));
+            r=mask_occupy1&(1<<(p-32));
+        }
+        else{
+            mask_occupy0=mask_occupy0^(1<<p);
+            r=mask_occupy0&(1<<p);
+        }
+        if (r){
+            $(this).addClass("black");
+        }
+        else{
+            $(this).removeClass("black");
+        }
+        $("#hex_occupy").val(`${(mask_occupy1>>>0).toString(16).padStart(8, '0')}${(mask_occupy0>>>0).toString(16).padStart(8, '0')}`);
+    });
+
+    </script>
+</body>
+</html>
