@@ -2,6 +2,7 @@
 
 #include "util.h"
 #include "bitptn.h"
+#include <string>
 
 /*
 bitmove: 
@@ -18,8 +19,10 @@ public:
 		b[1]=0x1008000000u;
 	}
 
-	template<int col>
-	ull genmove() const{
+	std::string repr() const;
+	std::string str() const;
+
+	ull genmove(int col) const{
 		// This part of code is brought from Zebra & stdrick
 		const ull& b_cur = b[col];
 		const ull& b_opp = b[!col];
@@ -106,8 +109,7 @@ public:
 		return moves;
 	}
 	
-	template<int col>
-	bool testmove() const{
+	bool testmove(int p, int col) const{
 		bool f=0;
 		#define FILP_OP(dir)
 		f|=ptn_flip[pl_##dir[p]][b[ col],pm_##dir[p]][b[!col],pm_##dir[p]][0];
@@ -115,8 +117,7 @@ public:
 		#undef FLIP_OP
 		return f;
 	}
-	template<int col>
-	void makemove(int p){
+	void makemove(int p, int col){
 		using namespace bitptn;
 		ull n_cur=0, n_opp=0, lb, lw;
 
@@ -132,6 +133,30 @@ public:
 		b[!col]=(b[!col]&p_umask[p])|n_opp;
 	}
 	
-	template<int col>
-	int cnt(){return popcnt(b[col]);}	
+	int cnt(int col){return popcnt(b[col]);}	
 };
+
+class Game{
+public:
+	Board board;
+	Board board_before[60];
+	int step;
+	int col;
+	Game(){
+		step=0; col=0;
+		board.setStart();
+	}
+	void makemove(int p){
+		assert(board.testmove(p, col),"invalid move at %d\n", p);
+		board_before[step++]=board;
+		board.makemove(p);
+		col=!col; if (!hasmove()) col=!col;
+	}
+	void unmakemove(){
+		assert(step>=0, "unmakemove outbound\n");
+		board=board_before[--step];
+	}
+	void genmove(){return board.genmove(col);}
+	bool hasmove(){return popcnt(board.genmove(col));}
+	void print();
+}

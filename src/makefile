@@ -1,4 +1,4 @@
-CXXFLAGS = -std=c++11 -g -Wall
+CXXFLAGS = -std=c++11 -g -Wall -DDEBUG
 objects = main.o util.o board.o bitptn.o
 
 all: $(objects)
