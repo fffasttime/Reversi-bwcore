@@ -37,7 +37,7 @@ ostream &operator<<(ostream &o, const vector<T> &vec){
 	return o;
 }
 
-//common mask "-" "|" "/" "\"
+//common mask "-" "|" "\" "/"
 vector<ull> h,v,d1,d2;
 
 void genCommonMask(){
@@ -71,7 +71,7 @@ vector<ull> pm_h,pm_v,pm_d1,pm_d2,p_umask;
 vector<int> pl_h,pl_v,pl_d1,pl_d2;
 void genFlipPos(){
 	auto getp=[](ull x, int p){
-		return __builtin_popcount(x&((1ull<<p)-1));
+		return __builtin_popcountll(x&((1ull<<p)-1));
 	};
 	inc(p,64){
 		for (auto hh:h) if (hh>>p&1){

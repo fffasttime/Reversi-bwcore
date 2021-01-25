@@ -2,48 +2,36 @@
 
 namespace bitptn{
 
-
-
-byte ptn_flip[8][256][256][2];
+u8 ptn_flip[8][256][256][2];
 bool ptn_canflip[8][256][256];
 
 //assume player b takes move now
-void lineFilpPtn(int p, byte b, byte w){
-    auto gp=[](byte x, int p){return x>>p&1;};
-    if (gp(b,p)||gp(w,p)){
+void lineFilpPtn(int p, u8 b, u8 w){
+    if (bget(b,p)||bget(w,p)){
         ptn_flip[p][b][w][0]=b;
         ptn_flip[p][b][w][1]=w;
         return;
     }
-    byte new_b=b, new_w=w;
-    bool ok=gp(w, p+1);
-    for (int np=p+1;np<8;np++){
-        if(gp(b,np)) break;
-        else if (!gp(w,np)) ok=0;
-    }
-    ptn_canflip[p][b][w]|=ok;
-    if (ok)
-        for (int np=p+1;np<8;np++){
-            if (gp(b,np)) break;
-            else{
-                new_b^=1<<np;
-                new_w^=1<<np;
-            }
+    u8 new_b=b, new_w=w;
+    int np;
+    if (p<6 && bget(w, p+1)){
+        for (np=p+2;np<8 && bget(w,np);np++);
+        if (np<8 && bget(b,np)){
+            ptn_canflip[p][b][w]=1;
+            for (--np;np-p;np--)
+                new_b^=1<<np, new_w^=1<<np;
+            new_b|=1<<p;
         }
-    ok=gp(w, p-1);
-    for (int np=p-1;np>=0;np--){
-        if(gp(b,np)) break;
-        else if (!gp(w,np)) ok=0;
     }
-    ptn_canflip[p][b][w]|=ok;
-    if (ok)
-        for (int np=p-1;np>=0;np--){
-            if (gp(b,np)) break;
-            else{
-                new_b^=1<<np;
-                new_w^=1<<np;
-            }
+    if (p>1 && bget(w, p-1)){
+        for (np=p-2;np>=0 && bget(w,np);np--);
+        if (np>=0 && bget(b,np)){
+            ptn_canflip[p][b][w]=1;
+            for (++np;np-p;np++)
+                new_b^=1<<np, new_w^=1<<np;
+            new_b|=1<<p;
         }
+    }
     ptn_flip[p][b][w][0]=new_b;
     ptn_flip[p][b][w][1]=new_w;
 }
