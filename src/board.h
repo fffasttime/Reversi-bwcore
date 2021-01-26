@@ -25,89 +25,25 @@ public:
 
 	u64 genmove(int col) const{
 		// This part of code is brought from Zebra & stdrick
-		cu64 b_cur = b[col];
-		cu64 b_opp = b[!col];
-		u64 moves;
-		u64 b_opp_inner;
-		u64 brd_flip;
-		u64 b_opp_adj;
+		cu64 b_cur = b[col], b_opp = b[!col];
+		u64 b_opp_inner = b_opp & 0x7E7E7E7E7E7E7E7Eu;
+		u64 moves = 0;
+		u64 b_flip, b_opp_adj;
 
-		b_opp_inner = b_opp & 0x7E7E7E7E7E7E7E7Eu;
+		#define GENMOVE(arrow, p, opp) \
+		b_flip = (b_cur arrow p) & opp; \
+		b_flip |= (b_flip arrow p) & opp; \
+		b_opp_adj = opp & (opp arrow p); \
+		b_flip |= (b_flip arrow (p+p)) & b_opp_adj; \
+		b_flip |= (b_flip arrow (p+p)) & b_opp_adj; \
+		moves |= b_flip arrow p
+		GENMOVE(>>, 1, b_opp_inner); GENMOVE(<<, 1, b_opp_inner);
+		GENMOVE(>>, 8, b_opp); GENMOVE(<<, 8, b_opp);
+		GENMOVE(>>, 7, b_opp_inner); GENMOVE(<<, 7, b_opp_inner);
+		GENMOVE(>>, 9, b_opp_inner); GENMOVE(<<, 9, b_opp_inner);
+		#undef GENMOVE
 
-		brd_flip = (b_cur >> 1) & b_opp_inner;
-		brd_flip |= (brd_flip >> 1) & b_opp_inner;
-
-		b_opp_adj = b_opp_inner & (b_opp_inner >> 1);
-		brd_flip |= (brd_flip >> 2) & b_opp_adj;
-		brd_flip |= (brd_flip >> 2) & b_opp_adj;
-
-		moves = brd_flip >> 1;
-
-		brd_flip = (b_cur << 1) & b_opp_inner;
-		brd_flip |= (brd_flip << 1) & b_opp_inner;
-
-		b_opp_adj = b_opp_inner & (b_opp_inner << 1);
-		brd_flip |= (brd_flip << 2) & b_opp_adj;
-		brd_flip |= (brd_flip << 2) & b_opp_adj;
-
-		moves |= brd_flip << 1;
-
-		brd_flip = (b_cur >> 8) & b_opp;
-		brd_flip |= (brd_flip >> 8) & b_opp;
-
-		b_opp_adj = b_opp & (b_opp >> 8);
-		brd_flip |= (brd_flip >> 16) & b_opp_adj;
-		brd_flip |= (brd_flip >> 16) & b_opp_adj;
-
-		moves |= brd_flip >> 8;
-
-		brd_flip = (b_cur << 8) & b_opp;
-		brd_flip |= (brd_flip << 8) & b_opp;
-
-		b_opp_adj = b_opp & (b_opp << 8);
-		brd_flip |= (brd_flip << 16) & b_opp_adj;
-		brd_flip |= (brd_flip << 16) & b_opp_adj;
-
-		moves |= brd_flip << 8;
-
-		brd_flip = (b_cur >> 7) & b_opp_inner;
-		brd_flip |= (brd_flip >> 7) & b_opp_inner;
-		
-		b_opp_adj = b_opp_inner & (b_opp_inner >> 7);
-		brd_flip |= (brd_flip >> 14) & b_opp_adj;
-		brd_flip |= (brd_flip >> 14) & b_opp_adj;
-		
-		moves |= brd_flip >> 7;
-
-		brd_flip = (b_cur << 7) & b_opp_inner;
-		brd_flip |= (brd_flip << 7) & b_opp_inner;
-
-		b_opp_adj = b_opp_inner & (b_opp_inner << 7);
-		brd_flip |= (brd_flip << 14) & b_opp_adj;
-		brd_flip |= (brd_flip << 14) & b_opp_adj;
-
-		moves |= brd_flip << 7;
-
-		brd_flip = (b_cur >> 9) & b_opp_inner;
-		brd_flip |= (brd_flip >> 9) & b_opp_inner;
-		
-		b_opp_adj = b_opp_inner & (b_opp_inner >> 9);
-		brd_flip |= (brd_flip >> 18) & b_opp_adj;
-		brd_flip |= (brd_flip >> 18) & b_opp_adj;
-		
-		moves |= brd_flip >> 9;
-		
-		brd_flip = (b_cur << 9) & b_opp_inner;
-		brd_flip |= (brd_flip << 9) & b_opp_inner;
-
-		b_opp_adj = b_opp_inner & (b_opp_inner << 9);
-		brd_flip |= (brd_flip << 18) & b_opp_adj;
-		brd_flip |= (brd_flip << 18) & b_opp_adj;
-
-		moves |= brd_flip << 9;
-
-		moves &= ~(b_cur | b_opp);
-		return moves;
+		return moves & ~(b_cur | b_opp);
 	}
 	
 	bool testmove(int p, int col) const{

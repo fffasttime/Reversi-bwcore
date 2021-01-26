@@ -1,4 +1,4 @@
-CXXFLAGS = -std=c++11 -g -Wall -DDEBUG
+CXXFLAGS = -std=c++14 -g -Wall -DDEBUG
 objects = util.o board.o bitptn.o
 
 all: $(objects) main.o
@@ -14,6 +14,6 @@ bitptn.o:
 board.o: bitptn.h
 util.o:
 
-.PHONY : clean
-clean : 
+.PHONY: clean
+clean: 
 	rm -f bwcore1.5.exe test.exe *.o

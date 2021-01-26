@@ -4,10 +4,13 @@ generate constant arrays in code
 author: fffasttime
 */
 #include <iostream>
+#include <functional>
+#include <algorithm>
 #include <vector>
 using namespace std;
 
 typedef unsigned long long ull;
+typedef ull u64;
 
 bool flghex;
 
@@ -59,6 +62,7 @@ void genCommonMask(){
 		d1.push_back(dd1);
 		d2.push_back(dd2);
 	}
+	reverse(begin(d1),end(d1));
 	flghex=1;
 	prtval(h); prtval(v);
 	prtval(d1); prtval(d2);
@@ -68,7 +72,23 @@ void genCommonMask(){
 //position mask (4x64)
 vector<ull> pm_h,pm_v,pm_d1,pm_d2,p_umask;
 //position to line pos after PEXT (4x64)
-vector<int> pl_h,pl_v,pl_d1,pl_d2;
+vector<ull> pl_h,pl_v,pl_d1,pl_d2;
+
+template<class T> constexpr const T& cmin(const T &a,const T &b){return a<b?a:b;}
+constexpr u64 fpl_h(int x){return x%8;}
+constexpr u64 fpl_v(int x){return x/8;}
+constexpr u64 fpl_d1(int x){return cmin(x/8,x%8);}
+constexpr u64 fpl_d2(int x){return cmin(x/8,7-x%8);}
+constexpr u64 fpm_h(int x){return 0xffull<<((x/8)*8);}
+constexpr u64 fpm_v(int x){return 0x101010101010101ull<<(x%8);}
+constexpr u64 fpm_d1(int x){return (x/8-x%8>0)?0x8040201008040201<<((x/8-x%8)*8):0x8040201008040201>>((x%8-x/8)*8);}
+constexpr u64 fpm_d2(int x){return (x/8+x%8-7>0)?0x0102040810204080<<((x/8+x%8-7)*8):0x0102040810204080>>((7-x%8-x/8)*8);}
+constexpr u64 fp_umask(int x){return ~(fpm_h(x)|fpm_v(x)|fpm_d1(x)|fpm_d2(x));}
+bool equ(int n, function<u64(int)> f, vector<u64> &v){
+	for (int i=0;i<n;i++) if (f(i)!=v[i]) return 0;
+	return 1; 
+}
+
 void genFlipPos(){
 	auto getp=[](ull x, int p){
 		return __builtin_popcountll(x&((1ull<<p)-1));
@@ -99,6 +119,14 @@ void genFlipPos(){
 	prtval(pm_h); prtval(pm_v);
 	prtval(pm_d1); prtval(pm_d2);	
 	prtval(p_umask);
+	
+	#define CHK(ptn) cout<<#ptn<<" "<<equ(64, f##ptn, ptn)<<"\n";
+	
+	CHK(pl_h); CHK(pl_v);
+	CHK(pl_d1); CHK(pl_d2);
+	CHK(pm_h); CHK(pm_v);
+	CHK(pm_d1); CHK(pm_d2);
+	CHK(p_umask);
 }
 
 int main(){
