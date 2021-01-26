@@ -4,6 +4,7 @@
 #define PWHITE 1
 #define BSIZE 8
 #define BSIZE2 64
+#define inc(i,n) for(int i=0;i<n;i++)
 
 typedef unsigned char u8;
 typedef unsigned long long u64;
@@ -48,6 +49,16 @@ inline bool bget(cu64 x, u64 p){
 inline void bts(u64 &x, u64 p){asm("bts %1,%0\n":"+r"(x):"r"(p));}
 inline void btr(u64 &x, u64 p){asm("btr %1,%0\n":"+r"(x):"r"(p));}
 inline int ctz(u64 x){assert(x, "ctz 0 is undefined behavior\n"); return __builtin_ctzll(x);}
+inline void bswap(u64 &x){asm("bswap %0\n":"+r"(x));}
+inline u64 rotate(u64 x){
+	x = (x & 0xf0f0f0f000000000) >> 4  | (x & 0x0f0f0f0f00000000) >> 32
+	  | (x & 0x00000000f0f0f0f0) << 32 | (x & 0x000000000f0f0f0f) << 4;
+	x = (x & 0xcccc0000cccc0000) >> 2  | (x & 0x3333000033330000) >> 16
+	  | (x & 0x0000cccc0000cccc) << 16 | (x & 0x0000333300003333) << 2;
+	x = (x & 0xaa00aa00aa00aa00) >> 1  | (x & 0x5500550055005500) >> 8
+	  | (x & 0x00aa00aa00aa00aa) << 8  | (x & 0x0055005500550055) << 1;
+	return x;
+}
 
 void showMask(u64 x);
 
