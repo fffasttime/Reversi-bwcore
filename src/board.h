@@ -3,6 +3,7 @@
 #include "util.h"
 #include "bitptn.h"
 #include <string>
+#include <algorithm>
 
 /*
 bitmove: 
@@ -71,7 +72,13 @@ public:
 		b[!col]=(b[!col]&p_umask[p])|n_opp;
 	}
 	
-	int cnt(int col) const{return popcnt(b[col]);}	
+	int cnt(int col) const{return popcnt(b[col]);}
+
+	void cswap(){std::swap(b[0],b[1]);}
+	void flip_h(){::flip_h(b[0]);::flip_h(b[1]);}
+	void flip_v(){::flip_v(b[0]);::flip_v(b[1]);}
+	void rotate_l(){::rotate_l(b[0]);::rotate_r(b[1]);}
+	void rotate_r(){::rotate_r(b[0]);::rotate_r(b[1]);}
 };
 
 class Game{

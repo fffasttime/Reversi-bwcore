@@ -3,6 +3,7 @@
 #include <locale>
 #include "util.h"
 #include "board.h"
+#include "evalptn.h"
 using std::cout;
 
 void check(bool val, const char *str){
@@ -15,6 +16,7 @@ void check(bool val, const char *str){
 
 int main(){
     bitptn::initPtnFlip();
+    initPtnConfig();
 
     //util.h
     CHECK(popcnt(~0)==64);
@@ -86,7 +88,7 @@ int main(){
     while (game.hasmove()){
         auto firstmove=*u64iter(game.genmove()).begin();
         game.makemove(firstmove);
-        CHECK(testmoves(game.board, game.col)==game.genmove());
+        //CHECK(testmoves(game.board, game.col)==game.genmove());
     }
     CHECK(game.board.b[0]==0xffd7ebf3f3fbffffu &&
           game.board.b[1]==0x28140c0c040000u);
@@ -96,10 +98,36 @@ int main(){
     while (game.hasmove()){
         auto firstmove=*u64iter(game.genmove()).begin();
         game.makemove(firstmove);
-        CHECK(testmoves(game.board, game.col)==game.genmove());
+        //CHECK(testmoves(game.board, game.col)==game.genmove());
     }
     CHECK(game.board.b[0]==0x3fb0888090a0c080u &&
           game.board.b[1]==0xc04f777f6f5f3f7fu);
+
+    CHECK(pow3to4(10,59048)==0xFFC00);
+    CHECK(pow4to3_10[0xFFC00]==59048);
+    CHECK(pow3to4(9,19682)==0x3FE00);
+    CHECK(pow4to3_9[0x3FE00]==19682);
+    CHECK(pow3to4(9,17222)==0x2AAAA);
+    CHECK(pow4to3_9[0x2AAAA]==17222);
+    CHECK(pow3to4(9,50)==0x280A0);
+    CHECK(pow4to3_9[0x280A0]==50);
+    CHECK(pow3to4(9,17010)==0xA0A);
+    CHECK(pow4to3_9[0xA0A]==17010);
+
+    //bitwise transform
+    x=0x1f1f;
+    u64 x_fv=x; flip_v(x_fv);
+    CHECK(x_fv==0xf8f8);
+    u64 x_r90=x; rotate_r(x_r90);
+    CHECK(x_r90==0xc0c0c0c0c0);
+    u64 x_l90=x; rotate_l(x_l90);
+    CHECK(x_l90==0x303030303000000);
+
+    flip_h(x);flip_h(x_fv);flip_h(x_l90);flip_h(x_r90);
+    CHECK(x==0x1f1f000000000000);
+    CHECK(x_fv==0xf8f8000000000000);
+    CHECK(x_l90==0x0000000303030303);
+    CHECK(x_r90==0xc0c0c0c0c0000000);
 
     printf("All test passed\n");
     return 0;

@@ -1,9 +1,10 @@
 #pragma once
+#include "board.h"
 
 #define EVAL_FILE "data/reversicoeff.bin"
 
 constexpr int Eval_PrTable[61]={-1,-1,0,0,0,1,1,1,2,2,2,3,3,3,4,4,4,4,5,5,5,5,6,6,6,6,6,7,7,7,7,7,8,8,8,8,8,8,9,9,9,9,9,9,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10};
-constexpr short pow3[]={1,3,9,27,81,243,729,2187,6561,19683,59049};
+constexpr unsigned short pow3[]={1,3,9,27,81,243,729,2187,6561,19683,59049};
 
 struct CoeffPack{
     short e1[pow3[10]], c52[pow3[10]], c33[pow3[9]], //by pow4to3
@@ -13,9 +14,10 @@ struct CoeffPack{
 
 extern CoeffPack pdata[12];
 
-extern short pow4to3_10[1<<20], pow4to3_9[1<<18];
-static int pow3to4(int len, int x);
+extern unsigned short pow4to3_10[1<<20], pow4to3_9[1<<18];
+int pow3to4(int len, int x);
 
-static void readShort(FILE *stream, short &tar);
+void readShort(FILE *stream, short &tar);
 void initPtnConfig();
 void loadPtnData();
+int evalPtn(const Board &board, int col, int step);
