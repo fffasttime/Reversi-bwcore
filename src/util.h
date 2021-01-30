@@ -1,5 +1,8 @@
 #pragma once
 
+#define likely(x) __builtin_expect(!!(x), 1)
+#define unlikely(x) __builtin_expect(!!(x), 0)
+
 #define PBLACK 0
 #define PWHITE 1
 #define BSIZE 8
@@ -12,9 +15,10 @@ typedef const u64& cu64;
 
 #ifdef DEBUG
 void assert(bool val, const char *fmt, ...);
+#define DEBUGTREE
 #else
 inline void assert(bool val, const char *fmt, ...){}
-#endif
+#endif //DEBUG
 
 inline int pos(int x, int y){assert(x>=0 && x<8 && y>=0 && y<8, "invalid pos\n"); return x*8+y;}
 
@@ -49,6 +53,7 @@ inline bool bget(cu64 x, u64 p){
 inline void bts(u64 &x, u64 p){asm("bts %1,%0\n":"+r"(x):"r"(p));}
 inline void btr(u64 &x, u64 p){asm("btr %1,%0\n":"+r"(x):"r"(p));}
 inline int ctz(u64 x){assert(x, "ctz 0 is undefined behavior\n"); return __builtin_ctzll(x);}
+inline int tzcnt(u64 x){if (x==0) return 64; return __builtin_ctzll(x);}
 inline void flip_h(u64 &x){asm("bswap %0\n":"+r"(x));}
 inline void flip_v(u64 &x){
 	x = (x & 0xaaaaaaaaaaaaaaaa) >> 1  | (x & 0x5555555555555555) << 1;

@@ -31,13 +31,13 @@ public:
 		u64 moves = 0;
 		u64 b_flip, b_opp_adj;
 
-		#define GENMOVE(arrow, p, opp) \
-		b_flip = (b_cur arrow p) & opp; \
-		b_flip |= (b_flip arrow p) & opp; \
-		b_opp_adj = opp & (opp arrow p); \
-		b_flip |= (b_flip arrow (p+p)) & b_opp_adj; \
-		b_flip |= (b_flip arrow (p+p)) & b_opp_adj; \
-		moves |= b_flip arrow p
+		#define GENMOVE(arrow, d, opp) \
+		b_flip = (b_cur arrow d) & opp; \
+		b_flip |= (b_flip arrow d) & opp; \
+		b_opp_adj = opp & (opp arrow d); \
+		b_flip |= (b_flip arrow (d+d)) & b_opp_adj; \
+		b_flip |= (b_flip arrow (d+d)) & b_opp_adj; \
+		moves |= b_flip arrow d
 		GENMOVE(>>, 1, b_opp_inner); GENMOVE(<<, 1, b_opp_inner);
 		GENMOVE(>>, 8, b_opp); GENMOVE(<<, 8, b_opp);
 		GENMOVE(>>, 7, b_opp_inner); GENMOVE(<<, 7, b_opp_inner);
@@ -46,8 +46,8 @@ public:
 
 		return moves & ~(b_cur | b_opp);
 	}
-	
 	bool testmove(int p, int col) const{
+	#if 0
 		using namespace bitptn;
 		bool f=0;
 		#define FLIP_OP(dir)\
@@ -55,9 +55,13 @@ public:
 		FLIP_OP(h); FLIP_OP(v); FLIP_OP(d1); FLIP_OP(d2);
 		#undef FLIP_OP
 		return f;
+	#else
+		return bget(genmove(col),p);
+	#endif
 	}
-	void makemove(int p, int col){
+	bool makemove(int p, int col){
 		using namespace bitptn;
+	#if 0
 		u64 n_cur=0, n_opp=0, lb, lw;
 
 		#define FLIP_OP(dir)\
@@ -70,15 +74,41 @@ public:
 
 		b[ col]=(b[ col]&p_umask[p])|n_cur;
 		b[!col]=(b[!col]&p_umask[p])|n_opp;
+	#else
+		u64 &b_cur = b[col]; u64 &b_opp = b[!col];
+		u64 b_flip, b_opp_adj, flips = 0;
+		u64 b_opp_inner = b_opp & 0x7E7E7E7E7E7E7E7Eu;
+		#define GENMOVE(arrow, d, opp) \
+		b_flip = ((1ull<<p) arrow d) & opp; \
+		b_flip |= (b_flip arrow d) & opp; \
+		b_opp_adj = opp & (opp arrow d); \
+		b_flip |= (b_flip arrow (d+d)) & b_opp_adj; \
+		b_flip |= (b_flip arrow (d+d)) & b_opp_adj; \
+		if((b_flip arrow d) & b_cur) flips |= b_flip
+		GENMOVE(>>, 1, b_opp_inner); GENMOVE(<<, 1, b_opp_inner);
+		GENMOVE(>>, 8, b_opp); GENMOVE(<<, 8, b_opp);
+		GENMOVE(>>, 7, b_opp_inner); GENMOVE(<<, 7, b_opp_inner);
+		GENMOVE(>>, 9, b_opp_inner); GENMOVE(<<, 9, b_opp_inner);
+		#undef GENMOVE
+		if(flips) b_cur^=flips, b_opp^=flips, bts(b_cur, p);
+		return flips;
+	#endif
 	}
-	
+	Board makemove_r(int p, int col) const{
+		Board r=*this;
+		r.makemove(p, col);
+		return r;
+	}
 	int cnt(int col) const{return popcnt(b[col]);}
+	u64 hash();
 
 	void cswap(){std::swap(b[0],b[1]);}
 	void flip_h(){::flip_h(b[0]);::flip_h(b[1]);}
 	void flip_v(){::flip_v(b[0]);::flip_v(b[1]);}
 	void rotate_l(){::rotate_l(b[0]);::rotate_r(b[1]);}
 	void rotate_r(){::rotate_r(b[0]);::rotate_r(b[1]);}
+	u64 emptys() const{return ~(b[0]|b[1]);}
+	u64 occupys() const{return b[0]|b[1];}
 };
 
 class Game{
