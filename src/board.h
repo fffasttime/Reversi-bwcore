@@ -109,31 +109,57 @@ public:
 	void rotate_r(){::rotate_r(b[0]);::rotate_r(b[1]);}
 	u64 emptys() const{return ~(b[0]|b[1]);}
 	u64 occupys() const{return b[0]|b[1];}
+
+	int operator[](int p) const{return 2-2*bget(b[0], p)-bget(b[1], p);}
 };
 
 class Game{
 public:
 	Board board;
 	Board board_before[60];
+	int col_before[60];
 	int step;
 	int col;
 	Game(){
 		step=0; col=0;
 		board.setStart();
 	}
+	bool testmove(int p){
+		if (p<0 || p>64) return false;
+		return board.testmove(p, col);
+	}
 	void makemove(int p){
 		assert(p>=0 && p<64, "invalid move at %d\n", p);
 		assert(board.testmove(p, col),"invalid move at %d\n", p);
 		assert(step<60, "invalid makemove steps");
-		board_before[step++]=board;
+		col_before[step]=col;
+		board_before[step]=board;
+		step++;
 		board.makemove(p, col);
 		col=!col; if (!hasmove()) col=!col;
 	}
 	void unmakemove(){
 		assert(step>=0, "unmakemove outbound\n");
-		board=board_before[--step];
+		--step;
+		board=board_before[step];
+		col=col_before[step];
 	}
-	u64 genmove(){return board.genmove(col);}
-	bool hasmove(){return popcnt(board.genmove(col));}
+	void reset(){
+		while(step>0) unmakemove();
+	}
+	bool isend(){return hasmove();}
+	int cnt(int col) const{return board.cnt(col);}
+	int winner() const{
+		if (cnt(PBLACK)>cnt(PWHITE)) return PBLACK;
+		else if (cnt(PBLACK)<cnt(PWHITE)) return PWHITE;
+		return 2;
+	}
+	u64 genmove() const{return board.genmove(col);}
+	bool hasmove() const{return popcnt(board.genmove(col));}
 	void print();
+	
+	bool operator[](int p) const{
+		assert(p>=0 && p<64, "invalid pos call at [%d]\n", p); 
+		return board[p];
+	}
 };

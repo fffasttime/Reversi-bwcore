@@ -1,4 +1,5 @@
 #include "search.h"
+#include "evahptn.h"
 
 Val search_end2(const Board &board_old, int col){
     u64 emptys=board_old.emptys();
@@ -80,4 +81,37 @@ Val search_exact(int depth, const Board &cboard, int col, Val alpha, Val beta, b
 #ifdef DEBUGTREE
     DEBUGTREE_WARPPER_END
 #endif
+}
+
+Val search_normal(int depth, const Board &cboard, int col, Val alpha, Val beta, bool pass){
+#ifdef DEBUGTREE
+    DEBUGTREE_WARPPER_BEGIN
+#endif
+    if (depth==max_depth){
+        return evalPtn(cboard, col);
+    }
+    u64 move=cboard.genmove(col);
+    if (unlikely(move==0)){
+        if (pass) return eval_end(cboard, col); 
+        return -search_exact(depth+1, cboard, !col, -beta, -alpha, 1);
+    }
+    Val val=-INF;
+    for (auto p:u64iter(move)){
+        Board board=cboard.makemove_r(p, col);
+        val=max(val, -search_exact(depth+1, board, !col, -beta, -alpha, 0));
+        if (val>=beta) return val;
+        alpha=max(alpha, val);
+    }
+    return val;
+#ifdef DEBUGTREE
+    DEBUGTREE_WARPPER_END
+#endif
+}
+
+int randomPolicy(const Board &board, int col){
+    vector<int> pos;
+    for (auto p: u64iter(board.genmove()))
+        pos.push_back(pos);
+    assert(pos.size(),"nowhere to go!\n");
+    return pos[rand()%pos.size()];
 }

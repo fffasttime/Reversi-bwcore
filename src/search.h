@@ -1,4 +1,5 @@
 #pragma once
+
 #include "board.h"
 #include <algorithm>
 using std::max;
@@ -37,3 +38,5 @@ Val search_end(const Board &cboard, int col, Val alpha, Val beta, bool pass){
 }
 
 Val search_exact(int depth, const Board &cboard, int col, Val alpha, Val beta, bool pass=0);
+Val search_normal(int depth, const Board &cboard, int col, Val alpha, Val beta, bool pass=0);
+Val randomPolicy(const Board &board, int col);

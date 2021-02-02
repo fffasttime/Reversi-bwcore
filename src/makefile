@@ -12,7 +12,7 @@ $(objects): util.h
 test.o: board.h bitptn.h evalptn.h search.h debugtree.h
 main.o: board.h bitptn.h
 evalptn.o: board.h bitptn.h evalptn.h
-search.o: board.h bitptn.h search.h debugtree.h
+search.o: board.h bitptn.h search.h debugtree.h evalptn.h
 debugtree.o: board.h bitptn.h
 board.o:  board.h bitptn.h
 bitptn.o: bitptn.h
