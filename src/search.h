@@ -5,7 +5,7 @@
 using std::max;
 
 typedef float Val;
-constexpr int INF=10000;
+constexpr int INF=256;
 
 #ifdef DEBUGTREE
     #include "debugtree.h"
@@ -39,4 +39,5 @@ Val search_end(const Board &cboard, int col, Val alpha, Val beta, bool pass){
 
 Val search_exact(int depth, const Board &cboard, int col, Val alpha, Val beta, bool pass=0);
 Val search_normal(int depth, const Board &cboard, int col, Val alpha, Val beta, bool pass=0);
-Val randomPolicy(const Board &board, int col);
+int random_choice(const Board &board, int col);
+int think_choice(const Board &board, int col);

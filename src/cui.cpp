@@ -24,7 +24,7 @@ int gamemode[2]; // -1 stands for user play
 Game game;
 
 void gotoXY(Ploc mp){
-	SetConsoleCursorPosition(hOut, { mp.x,mp.y });
+	SetConsoleCursorPosition(hOut, { (short)mp.x, (short)mp.y });
 }
 
 void minit(){
@@ -53,7 +53,7 @@ void mexit(){
 Ploc getCurClick(){
 	INPUT_RECORD    mouseRec;
 	DWORD           res;
-	COORD           crPos, crHome = { 0, 0 };
+	COORD           crPos;
 	while (1){
 		ReadConsoleInput(hIn, &mouseRec, 1, &res);
 		if (mouseRec.EventType == MOUSE_EVENT){
@@ -105,8 +105,7 @@ void showCanDo(){
 	}
 }
 
-void gameEnd()
-{
+void gameEnd(){
 	gotoXY({0,0});
 	iPrint();
 	printf("B:%2d  W:%2d\n", game.cnt(PBLACK), game.cnt(PWHITE));
@@ -115,7 +114,7 @@ void gameEnd()
 	else if (game.winner()==PBLACK)
 		printf(" Winner:Black");
 	else
-		printf(" Equal");
+		printf(" Draw!");
 	gotoXY({0,20});
 	printf("[·µ»Ø]");
 	while (1){
@@ -125,23 +124,26 @@ void gameEnd()
 }
 
 void gamePlay(){
-	while (1){
+	while (!game.isend()){
 		printf("B:%2d  W:%2d\n", game.cnt(PBLACK), game.cnt(PWHITE));
 		if (game.col == PWHITE) printf("now:White");
 		else printf("now:Black");
 		int sp;
 		if (gamemode[game.col] == -1){
-			sp = MlocToPloc(getCurClick()).pos();
+			Ploc p = MlocToPloc(getCurClick());
 			bool flag = false;
-			while (!Ploc(sp).inBorder() || !game.testmove(sp))
-			{
+			while (!p.inBorder() || !game.testmove(p.pos())){
 				if (!flag) showCanDo(), 
 				flag = true;
-				sp = MlocToPloc(getCurClick()).pos();
+				p = MlocToPloc(getCurClick());
 			}
+			sp=p.pos();
 		}
 		else{
-			sp=randomPolicy(game.board, game.col);
+			if (gamemode[game.col] == 0) 
+				sp = random_choice(game.board, game.col);
+			else
+				sp=think_choice(game.board, game.col);
 			Sleep(1);
 		}
 		game.makemove(sp);
@@ -159,11 +161,11 @@ void gameStart(){
 }
 
 void showAbout(){
-	for (int i=1;i<winsize.Y-2;i++)	{
+	for (int i=1;i<winsize.Y-2;i++){
 		gotoXY({2,i});
 		for (int j=0;j<winsize.X-4;j++) putchar(' ');
 	}
-	gotoXY({2,1}); printf("BlackWhiteChess(Reversi) 1.3 improve0");
+	gotoXY({2,1}); printf("Reversi_bwcore 1.3 improve0");
 	gotoXY({2,3}); printf("Appearance: Console UI");
 	gotoXY({2,4}); printf("  (version=1.0   date=2016-6-20) fffasttime");
 	gotoXY({2,6}); printf("Kernel: bwcore1.2_i4 ");
@@ -178,15 +180,15 @@ void showAbout(){
 
 void writeSelect(int col){
 	if (col==PBLACK){
-		gotoXY({32,11}); printf("                ");
+		gotoXY({32,11}); printf("                 ");
 		if (gamemode[PBLACK]==-1) {gotoXY({35,11}); printf("ºÚÉ«£ºÍæ¼Ò");}
 		else{
 			gotoXY({32,11}); printf("ºÚÉ«£ºµçÄÔ");
 			switch(gamemode[PBLACK]){
-				case 0:printf("(²âÊÔ1)"); break;
-				case 1:printf("(²âÊÔ2)"); break;
-				case 2:printf("(²âÊÔ3)"); break;
-				case 3:printf("(²âÊÔ4)"); break;
+				case 0:printf("(Ëæ»ú)"); break;
+				case 1:printf("(²âÊÔ)"); break;
+				case 2:printf("(²âÊÔ)"); break;
+				case 3:printf("(²âÊÔ)"); break;
 			}
 		}
 	}
@@ -196,25 +198,24 @@ void writeSelect(int col){
 		else{
 			gotoXY({32,12}); printf("°×É«£ºµçÄÔ");
 			switch(gamemode[PWHITE]){
-				case 0:printf("(²âÊÔ1)"); break;
-				case 1:printf("(²âÊÔ2)"); break;
-				case 2:printf("(²âÊÔ3)"); break;
-				case 3:printf("(²âÊÔ4)"); break;
+				case 0:printf("(Ëæ»ú)"); break;
+				case 1:printf("(²âÊÔ)"); break;
+				case 2:printf("(²âÊÔ)"); break;
+				case 3:printf("(²âÊÔ)"); break;
 			}
 		}
 	}
 }
 
-int splashScreen()
-{
+int splashScreen(){
 	gotoXY({0,0});
-	printf("¨X"); for (int i = 1; i < winsize.X/2-1; i++) printf("¨T"); printf("¨[");
+	printf("¨X"); for (int i = 1; i < winsize.X/2-1; i++) printf("¨T"); printf("¨[\n");
 	for (int i=1;i<winsize.Y-2;i++){
 		printf("¨U");
 		for (int j=1;j<winsize.X/2-1;j++) printf("  ");
-		printf("¨U");
+		printf("¨U\n");
 	}
-	printf("¨^"); for (int i = 1; i < winsize.X/2-1; i++) printf("¨T"); printf("¨a");
+	printf("¨^"); for (int i = 1; i < winsize.X/2-1; i++) printf("¨T"); printf("¨a\n");
 	gotoXY({30,11}); printf("               ");
 	gotoXY({32,8}); printf("ºÚ°×Æå   1.3");
 	gotoXY({36,10}); printf(">>¿ªÊ¼<<");

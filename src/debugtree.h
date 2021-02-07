@@ -3,7 +3,7 @@
 #define DEBUGTREE_WARPPER_BEGIN \
 if (debug_tree)\
 debug_tree->step_in(__func__,depth, cboard, col, alpha, beta);\
-auto warpper=[&](){
+auto warpper=[&]()->Val{
 #define DEBUGTREE_WARPPER_END \
 }; auto ret=warpper(); if (debug_tree) debug_tree->step_out(ret); return ret;
 

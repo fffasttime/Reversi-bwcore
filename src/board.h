@@ -125,7 +125,7 @@ public:
 		board.setStart();
 	}
 	bool testmove(int p){
-		if (p<0 || p>64) return false;
+		if (p<0 || p>=64) return false;
 		return board.testmove(p, col);
 	}
 	void makemove(int p){
@@ -147,7 +147,7 @@ public:
 	void reset(){
 		while(step>0) unmakemove();
 	}
-	bool isend(){return hasmove();}
+	bool isend(){return !hasmove();}
 	int cnt(int col) const{return board.cnt(col);}
 	int winner() const{
 		if (cnt(PBLACK)>cnt(PWHITE)) return PBLACK;
@@ -158,7 +158,7 @@ public:
 	bool hasmove() const{return popcnt(board.genmove(col));}
 	void print();
 	
-	bool operator[](int p) const{
+	int operator[](int p) const{
 		assert(p>=0 && p<64, "invalid pos call at [%d]\n", p); 
 		return board[p];
 	}

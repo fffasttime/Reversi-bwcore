@@ -93,7 +93,7 @@ int main(){
     inc(i,20){
         b2.b[0]+=231689789646623;b2.b[1]+=123456123656123; 
  		b2.b[1]^=b2.b[0]&b2.b[1];
-        TSCTEST(evalPtn(b2, 1, 1));
+        TSCTEST(evalPtn(b2, 1));
     }
     inc(i,5){
         TSCTEST(inc(j,10) popcnt(board.genmove(PBLACK)));
@@ -165,9 +165,13 @@ int main(){
     CHECK(search_end2(b1,PWHITE)==-16);
     CHECK(search_exact(5, board, 1, -INF, INF)==-16);
 
+    loadPtnData();
+    board.setStart();
+    cout<<search_normal(4, board, PBLACK, -INF, INF)<<std::endl;
+
 #ifdef DEBUGTREE
     debug_tree=new DebugTree;
-    cout<<"log tree "<<search_exact(5, board, 1, -INF, INF)<<'\n';
+    cout<<"log tree "<<think_choice(board, PBLACK)<<'\n';
     debug_tree->write_html("debugtree.html");
     delete debug_tree; debug_tree=nullptr;
 #endif 
