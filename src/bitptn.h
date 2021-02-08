@@ -35,7 +35,7 @@ constexpr auto make_array(Function f)
     CEXPR_ARRAY_DEF(p_umask, 64, ~(pm_h[x]|pm_v[x]|pm_d1[x]|pm_d2[x]));
 #undef CEXPR_ARRAY_DEF
 
-constexpr u64 edge2x=0x80c080808080c080;
+constexpr u64 edge2x=0x42ff;
 constexpr u64 c33=0x70707;
 constexpr u64 c52=0x1f1f;
 

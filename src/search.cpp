@@ -70,7 +70,7 @@ Val search_exact(int depth, const Board &cboard, int col, Val alpha, Val beta, b
     u64 move=cboard.genmove(col);
     if (unlikely(move==0)){
         if (pass) return eval_end(cboard, col); 
-        return -search_exact(depth-1, cboard, !col, -beta, -alpha, 1);
+        return -search_exact(depth, cboard, !col, -beta, -alpha, 1);
     }
     Val val=-INF;
     for (auto p:u64iter(move)){
@@ -93,13 +93,13 @@ Val search_normal(int depth, const Board &cboard, int col, Val alpha, Val beta, 
 #ifdef DEBUGTREE
     DEBUGTREE_WARPPER_BEGIN
 #endif
-    if (depth==0){
-        return evalMidGame(cboard, col);
-    }
     u64 move=cboard.genmove(col);
     if (unlikely(move==0)){
         if (pass) return eval_end(cboard, col); 
-        return -search_normal(depth-1, cboard, !col, -beta, -alpha, 1);
+        return -search_normal(depth, cboard, !col, -beta, -alpha, 1);
+    }
+    if (depth==0){
+        return evalMidGame(cboard, col);
     }
     Val val=-INF;
     for (auto p:u64iter(move)){
@@ -140,7 +140,9 @@ int search_root(int depth, const Board &cboard, int col, Val delta){
 #ifdef DEBUGTREE
     if (debug_tree) debug_tree->step_out(alpha);
 #endif
-    std::remove_if(result.begin(),result.end(),[&](const auto &x){return x.second<alpha-delta;});
+    result.erase(
+    std::remove_if(result.begin(),result.end(),[&](const auto &x){return x.second<alpha-delta;}),
+        result.end());
     return result[rand()%result.size()].first;
 }
 

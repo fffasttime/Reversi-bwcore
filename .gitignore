@@ -1,6 +1,7 @@
 *.o
 *.exe
 *.out
+*.log
 /.vscode
 /data/*
 /src/*.html

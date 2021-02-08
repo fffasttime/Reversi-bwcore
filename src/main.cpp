@@ -4,10 +4,14 @@
 #include "evalptn.h"
 using std::cin; using std::cout;
 
-int main(){
+void global_init(){
     bitptn::initPtnFlip();
     initPtnConfig();
     loadPtnData();
+}
+
+int main(){
+    global_init();
     runConsole();
     return 0;
 }

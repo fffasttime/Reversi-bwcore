@@ -4,7 +4,7 @@
 
 std::string Board::repr() const{
     std::ostringstream o;
-    o<<std::hex<<b[0]<<' '<<b[1]<<'\n';
+    o<<std::hex<<"0x"<<b[0]<<" 0x"<<b[1]<<'\n';
     return o.str();
 }
 

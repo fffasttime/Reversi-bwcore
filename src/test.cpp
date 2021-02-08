@@ -23,10 +23,7 @@ expr; \
 asm volatile("rdtsc":"=A" (t_end)::"%rdx");\
 printf(#expr); printf(" TSC=%d\n",t_end-t_start);
 
-int main(){
-    bitptn::initPtnFlip();
-    initPtnConfig();
-
+int runTests(){
     //util.h
     CHECK(popcnt(~0)==64);
     CHECK(popcnt( 0)==0);
@@ -165,17 +162,144 @@ int main(){
     CHECK(search_end2(b1,PWHITE)==-16);
     CHECK(search_exact(5, board, 1, -INF, INF)==-16);
 
-    loadPtnData();
     board.setStart();
     cout<<search_normal(4, board, PBLACK, -INF, INF)<<std::endl;
+    board.makemove(37, PBLACK);
+    board.makemove(pos(5,3), PWHITE);
 
 #ifdef DEBUGTREE
     debug_tree=new DebugTree;
     cout<<"log tree "<<think_choice(board, PBLACK)<<'\n';
-    debug_tree->write_html("debugtree.html");
+    debug_tree->write_html("debugtree.html", 6);
     delete debug_tree; debug_tree=nullptr;
 #endif 
 
     printf("All test passed\n");
+    return 0;
+}
+
+void global_init(){
+    bitptn::initPtnFlip();
+    initPtnConfig();
+    loadPtnData();
+}
+
+void runDebugMode(){
+    Game game;
+    std::string cmd;
+    cout<<"> ";
+    bool echo=true;
+    auto displayGame=[&](){
+        cout<<game.board.str();
+        printf("step:%d, col:%d\n", game.step+4, game.col);
+    };
+    while (std::cin>>cmd){
+        if (cmd=="p" || cmd=="print") displayGame();
+        else if (cmd=="ph" || cmd=="printhex") cout<<game.board.repr();
+        else if (cmd=="q" || cmd=="quit" || cmd=="exit") return;
+        else if (cmd=="m" || cmd=="makemove"){
+            int x, y; std::cin>>x>>y;
+            if (game.testmove(pos(x,y))){
+                game.makemove(pos(x,y));
+                if (echo) displayGame();
+            }
+            else
+                puts("invalid move");
+        }
+        else if (cmd=="u" || cmd=="undo" || cmd=="unmakemove"){
+            if (game.step){
+                game.unmakemove();
+                if (echo) displayGame();
+            }
+            else puts("invalid");
+        }
+        else if (cmd=="echo"){
+            echo=!echo;
+            printf("echo %s\n", echo?"on":"off");
+        }
+        else if (cmd=="evalptn"){
+            printf("evalptn: %f\n", evalPtn(game.board, game.col)/256.0);
+        }
+        else if (cmd=="tree"){
+            debug_tree=new DebugTree;
+            if (game.isend()) puts("no move");
+            else{
+                int p=think_choice(game.board, game.col);
+                printf("%d %d\n", p/8, p%8);
+            }
+            debug_tree->write_html("debugtree.html", 6);
+            delete debug_tree; debug_tree=nullptr;
+        }
+        else if (cmd=="think"){
+            if (game.isend()) puts("no move");
+            else{
+                int p=think_choice(game.board, game.col);
+                printf("%d %d\n", p/8, p%8);
+            }
+        }
+        else if (cmd=="play"){
+            if (game.isend()) puts("no move");
+            else{
+                int p=think_choice(game.board, game.col);
+                game.makemove(p);
+                if (echo) displayGame();
+            }
+        }
+        else if (cmd=="cnt" || cmd=="count"){
+            printf("B:%2d  W:%2d\n", game.cnt(0), game.cnt(1));
+        }
+        else if (cmd=="ld"){
+            u64 x, y;
+            std::cin>>std::hex>>x>>y;
+            if (x&y){
+                puts("invalid");
+            }
+            else{
+                game.reset();
+                game.board.b[0]=x;
+                game.board.b[1]=y;
+                if (echo) displayGame();
+            }
+        }
+        else if (cmd=="flipv"){
+            game.board.flip_v();
+            if (echo) displayGame();
+        }
+        else if (cmd=="fliph"){
+            game.board.flip_h();
+            if (echo) displayGame();
+        }
+        else if (cmd=="rotatel"){
+            game.board.rotate_l();
+            if (echo) displayGame();
+        }
+        else if (cmd=="rotater"){
+            game.board.rotate_r();
+            if (echo) displayGame();
+        }
+        else if (cmd=="cswap"){
+            game.board.cswap();
+            if (echo) displayGame();
+        }
+        else if (cmd=="fcol"){
+            game.col=!game.col;
+            printf("now col: %d\n",game.col);
+        }
+        else if (cmd=="reset"){
+            game.reset();
+            if (echo) displayGame();
+        }
+        else{
+            puts("unknown command");
+        }
+        cout<<"> ";
+    }
+}
+
+int main(int argc, char **argv){
+    global_init();
+    if (argc==2)
+        runTests();
+    runDebugMode();
     return 0;
 }

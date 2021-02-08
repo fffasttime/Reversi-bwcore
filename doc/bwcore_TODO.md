@@ -54,4 +54,13 @@ bwcore1.5(strongbwcore)对目前成熟的技术进行实验和调优。主要目
 
 使用e2~e4,k8~k4时，无需对棋盘变换。c52需要全部8种变换。c33需要`flipv,fliph,r180`，e1需要`flipv,lrotate,rrotate`。
 
-对长度9-10的模板进行三进制转换。默认黑色(先手方)在二进制下为高位，三进制下位权为2。二进制下低位在三进制下为高位。占内存约10MB。
+对长度9-10的模板进行三进制转换。约定默认黑色(先手方)在二进制下为高位，三进制下位权为2。二进制下低位在三进制下为高位。占内存约10MB。
+
+### 文件格式
+
+主要由16位整数构成。
+
+| version | part count | pattern type count | pattern type length        | pattern coeff data | checksum | desc_str_len | desc_str | generate timestamp |
+| ------- | ---------- | ------------------ | -------------------------- | ------------------ | -------- | ------------ | -------- | ------------------ |
+| int16   | int16      | int16              | int16*(pattern type count) | int16*             | int16    | int16        | cstring  | int64              |
+
