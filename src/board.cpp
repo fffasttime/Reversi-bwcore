@@ -11,7 +11,7 @@ std::string Board::repr() const{
 std::string Board::str() const{
     std::ostringstream o;
     for (int i=0;i<BSIZE2;i++){
-        if (bget(b[0]&b[1], i)) assert(false, "pos %d has two pieces\n", i);
+        if (bget(b[0]&b[1], i)) assertprintf(false, "pos %d has two pieces\n", i);
         else if (bget(b[0], i)) o<<"¡ñ";
         else if (bget(b[1], i)) o<<"¡ğ";
         else o<<"¡¤";

@@ -8,10 +8,10 @@ void DebugTreeNode::write_board(FILE *out){
     if (fa!=nullptr) movepos=tzcnt(fa->board.occupys()^board.occupys());
     for (int i=0;i<BSIZE2;i++){
         if (i==movepos) fprintf(out, "<font style=\"background: pink\">");
-        if (bget(board.b[0]&board.b[1], i)) assert(false, "pos %d has two pieces\n", i);
-        else if (bget(board.b[0], i)) fprintf(out,"â—");
-        else if (bget(board.b[1], i)) fprintf(out,"â—‹");
-        else if (board.testmove(i, col)) fprintf(out,"ï¼‹");
+        if (bget(board.b[0]&board.b[1], i)) assertprintf(false, "pos %d has two pieces\n", i);
+        else if (bget(board.b[0], i)) fprintf(out,"¡ñ");
+        else if (bget(board.b[1], i)) fprintf(out,"¡ğ");
+        else if (board.testmove(i, col)) fprintf(out,"£«");
         else fprintf(out,"&nbsp;");
         if (i==movepos) fprintf(out, "</font>");
         if (i%8==7) fprintf(out,"<br>");
@@ -56,7 +56,7 @@ void DebugTree::step_in(const std::string &fun_name, int depth, const Board &boa
 }
 
 void DebugTree::write_html(std::string file, int d_limit){
-    assert(root!=nullptr, "DebugTree is empty\n");
+    assertprintf(root!=nullptr, "DebugTree is empty\n");
     FILE *out=fopen(file.c_str(),"w");
     root->write_html(out, 0, d_limit);
     fclose(out);

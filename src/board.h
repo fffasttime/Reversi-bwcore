@@ -47,34 +47,10 @@ public:
 		return moves & ~(b_cur | b_opp);
 	}
 	bool testmove(int p, int col) const{
-	#if 0
-		using namespace bitptn;
-		bool f=0;
-		#define FLIP_OP(dir)\
-		f|=ptn_canflip[pl_##dir [p]][pext(b[ col],pm_##dir [p])][pext(b[!col],pm_##dir [p])];
-		FLIP_OP(h); FLIP_OP(v); FLIP_OP(d1); FLIP_OP(d2);
-		#undef FLIP_OP
-		return f;
-	#else
 		return bget(genmove(col),p);
-	#endif
 	}
 	bool makemove(int p, int col){
 		using namespace bitptn;
-	#if 0
-		u64 n_cur=0, n_opp=0, lb, lw;
-
-		#define FLIP_OP(dir)\
-		lb=pext(b[ col],pm_##dir [p]);\
-		lw=pext(b[!col],pm_##dir [p]);\
-		n_cur|=pdep(ptn_flip[pl_##dir [p]][lb][lw][0],pm_##dir [p]);\
-		n_opp|=pdep(ptn_flip[pl_##dir [p]][lb][lw][1],pm_##dir [p]);
-		FLIP_OP(h); FLIP_OP(v); FLIP_OP(d1); FLIP_OP(d2);
-		#undef FLIP_OP
-
-		b[ col]=(b[ col]&p_umask[p])|n_cur;
-		b[!col]=(b[!col]&p_umask[p])|n_opp;
-	#else
 		u64 &b_cur = b[col]; u64 &b_opp = b[!col];
 		u64 b_flip, b_opp_adj, flips = 0;
 		u64 b_opp_inner = b_opp & 0x7E7E7E7E7E7E7E7Eu;
@@ -92,7 +68,6 @@ public:
 		#undef GENMOVE
 		if(flips) b_cur^=flips, b_opp^=flips, bts(b_cur, p);
 		return flips;
-	#endif
 	}
 	Board makemove_r(int p, int col) const{
 		Board r=*this;
@@ -132,9 +107,9 @@ public:
 		return board.testmove(p, col);
 	}
 	void makemove(int p){
-		assert(p>=0 && p<64, "invalid move at %d\n", p);
-		assert(board.testmove(p, col),"invalid move at %d\n", p);
-		assert(step<60, "invalid makemove steps");
+		assertprintf(p>=0 && p<64, "invalid move at %d\n", p);
+		assertprintf(board.testmove(p, col),"invalid move at %d\n", p);
+		assertprintf(step<60, "invalid makemove steps");
 		col_before[step]=col;
 		board_before[step]=board;
 		step++;
@@ -142,7 +117,7 @@ public:
 		col=!col; if (!hasmove()) col=!col;
 	}
 	void unmakemove(){
-		assert(step>=0, "unmakemove outbound\n");
+		assertprintf(step>=0, "unmakemove outbound\n");
 		--step;
 		board=board_before[step];
 		col=col_before[step];
@@ -162,7 +137,7 @@ public:
 	bool hasmove() const{return popcnt(board.genmove(col));}
 	
 	int operator[](int p) const{
-		assert(p>=0 && p<64, "invalid pos call at [%d]\n", p); 
+		assertprintf(p>=0 && p<64, "invalid pos call at [%d]\n", p); 
 		return board[p];
 	}
 };

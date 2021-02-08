@@ -5,7 +5,6 @@
 using std::cin; using std::cout;
 
 void global_init(){
-    bitptn::initPtnFlip();
     initPtnConfig();
     loadPtnData();
 }

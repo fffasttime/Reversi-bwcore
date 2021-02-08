@@ -4,11 +4,11 @@
 #include "util.h"
 
 #ifdef DEBUG
-void assert(bool val, const char *fmt, ...){
+void assertprintf(bool val, const char *fmt, ...){
 	if (!val){
 		va_list args;
 		va_start(args, fmt);
-		printf("Assertion failed!\n");
+		printf("assertion failed!\n");
 		vprintf(fmt, args);
 		va_end(args);
 		fflush(stdout);

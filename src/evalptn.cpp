@@ -3,7 +3,11 @@
 #include "bitptn.h"
 #include <iostream>
 
+#ifndef ONLINE
 #define EVAL_FILE "../data/reversicoeff.bin"
+#else
+#define EVAL_FILE "reversicoeff.bin"
+#endif
 
 constexpr int Eval_PrTable[61]={-1,-1,0,0,0,1,1,1,2,2,2,3,3,3,4,4,4,4,5,5,5,5,6,6,6,6,6,7,7,7,7,7,8,8,8,8,8,8,9,9,9,9,9,9,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10};
 constexpr unsigned short pow3[]={1,3,9,27,81,243,729,2187,6561,19683,59049};
@@ -52,7 +56,7 @@ int pow3to4(int len, int x){
 void loadPtnData(){
     FILE *in=fopen(EVAL_FILE, "rb");
     short format_version; readShort(in, format_version);
-    assert(format_version==1, "pattern data format doesn't match\n");
+    assertprintf(format_version==1, "pattern data format doesn't match\n");
     short part_cnt; readShort(in, part_cnt);
     short type_cnt; readShort(in, type_cnt);
     short _; inc(i, type_cnt)  readShort(in, _);
@@ -76,7 +80,7 @@ void loadPtnData(){
         inc(j,pow3[4])  rdc(p.k4[pow3to4(4,j)]);
     }
     short file_checksum; readShort(in, file_checksum);
-    assert(checksum==file_checksum, "pattern file checksum failed\n");
+    assertprintf(checksum==file_checksum, "pattern file checksum failed\n");
     fclose(in);
 }
 

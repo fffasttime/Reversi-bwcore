@@ -118,7 +118,7 @@ int random_choice(const Board &board, int col){
     std::vector<int> pos;
     for (auto p: u64iter(board.genmove(col)))
         pos.push_back(p);
-    assert(pos.size(), "nowhere to play\n");
+    assertprintf(pos.size(), "nowhere to play\n");
     return pos[rand()%pos.size()];
 }
 
@@ -128,7 +128,7 @@ int search_root(int depth, const Board &cboard, int col, Val delta){
         debug_tree->step_in(__func__,depth, cboard, col, -INF, INF);
 #endif
     u64 move=cboard.genmove(col);
-    assert(move, "nowhere to play\n");
+    assertprintf(move, "nowhere to play\n");
     std::vector<std::pair<int, Val>> result;
     Val alpha=-INF;
     for (auto p:u64iter(move)){

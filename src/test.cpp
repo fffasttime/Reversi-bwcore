@@ -53,20 +53,6 @@ int runTests(){
     board.setStart();
 
     CHECK(popcnt(board.genmove(PBLACK)));
-
-    CHECK(bitptn::pm_d1[1]==0x80402010080402);
-    CHECK(bitptn::p_umask[10]==~0x4844424150eff0eu);
-
-    CHECK(bitptn::v[4]==bitptn::pm_v[pos(3,4)]);
-    CHECK(pext(board.b[0], bitptn::pm_v[pos(5,4)])==0x8);
-    CHECK(pext(board.b[1], bitptn::pm_v[pos(5,4)])==0x10);
-
-    CHECK(pext(board.b[0], bitptn::pm_d2[pos(0,7)])==0x18);
-    CHECK(pext(board.b[1], bitptn::pm_d1[pos(0,0)])==0x18);
-
-    CHECK(bitptn::ptn_canflip[5][0x8][0x10]);
-
-    CHECK(bitptn::pl_v[pos(5,4)]==5);
     CHECK(board.testmove(pos(5,4), PBLACK));
 
     auto testmoves=[&](Board &b, int col){
@@ -179,7 +165,6 @@ int runTests(){
 }
 
 void global_init(){
-    bitptn::initPtnFlip();
     initPtnConfig();
     loadPtnData();
 }
