@@ -190,8 +190,7 @@ void runDebugMode(){
     cout<<"> ";
     bool echo=true;
     auto displayGame=[&](){
-        cout<<game.board.str();
-        printf("step:%d, col:%d\n", game.step+4, game.col);
+        cout<<game.str();
     };
     while (std::cin>>cmd){
         if (cmd=="p" || cmd=="print") displayGame();

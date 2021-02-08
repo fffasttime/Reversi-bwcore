@@ -1,12 +1,25 @@
 #include "cui.h"
 #include "search.h"
 #include "board.h"
+#include "stdio.h"
+#include "time.h"
 #include <Windows.h>
 #include <cstdio>
 using namespace std;
 
 extern HANDLE hOut, hIn;
 extern const COORD winsize;
+
+FILE *log_out;
+
+void logprintf(const char *fmt, ...){
+	if (log_out==nullptr) return;
+	va_list args;
+	va_start(args, fmt);
+	vfprintf(log_out, fmt, args);
+	va_end(args);
+	fflush(log_out);
+}
 
 struct Ploc{
 	int x,y;
@@ -140,16 +153,23 @@ void gamePlay(){
 			sp=p.pos();
 		}
 		else{
+			clock_t t0 = clock();
 			if (gamemode[game.col] == 0) 
 				sp = random_choice(game.board, game.col);
 			else
-				sp=think_choice(game.board, game.col);
+				sp = think_choice(game.board, game.col);
+			logprintf("time: %dms\n", (int)clock()-t0);
 			Sleep(1);
 		}
+		logprintf("m %d %d\n", sp/8, sp%8);
+		logprintf("%s", game.str().c_str());
 		game.makemove(sp);
+
 		gotoXY(PlocToMloc(sp));
 		if (game.col == PWHITE) printf("¡ð");
-		else if (game.col == PWHITE) printf("¡ñ");
+		else if (game.col == PBLACK) printf("¡ñ");
+		Sleep(1);
+
 		gotoXY({ 0,0 });
 		iPrint();
 	}
@@ -252,6 +272,8 @@ int splashScreen(){
 
 void runConsole(){
 	minit();
+	log_out=fopen("bwcore1.5.log", "w");
+	auto t=time(nullptr); logprintf("Program start at  %s", ctime(&t));
 	while (1){
 		int ret=splashScreen();
 		if (ret==0) break;
@@ -260,5 +282,6 @@ void runConsole(){
 		gamePlay();
 		gameEnd();
 	}
+	fclose(log_out);
 	mexit();
 }

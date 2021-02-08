@@ -24,3 +24,10 @@ void Game::print(){
     std::cout<<board.str();
     std::cout<<"step: "<<step<<"  col: "<<col<<"  B: "<<board.cnt(0)<<" W: "<<board.cnt(1)<<std::endl;
 }
+
+std::string Game::str(){
+    std::ostringstream o;
+    o<<board.str();
+    o<<"step: "<<step<<"  col: "<<col<<"  B: "<<board.cnt(0)<<" W: "<<board.cnt(1)<<std::endl;
+    return o.str();
+}

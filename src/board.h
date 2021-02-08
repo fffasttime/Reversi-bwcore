@@ -115,6 +115,9 @@ public:
 
 class Game{
 public:
+	void print();
+	std::string str();
+
 	Board board;
 	Board board_before[60];
 	int col_before[60];
@@ -157,7 +160,6 @@ public:
 	}
 	u64 genmove() const{return board.genmove(col);}
 	bool hasmove() const{return popcnt(board.genmove(col));}
-	void print();
 	
 	int operator[](int p) const{
 		assert(p>=0 && p<64, "invalid pos call at [%d]\n", p); 
