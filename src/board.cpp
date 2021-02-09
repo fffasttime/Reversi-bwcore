@@ -4,10 +4,10 @@
 
 std::string Board::repr() const{
     std::ostringstream o;
-    o<<std::hex<<"0x"<<b[0]<<" 0x"<<b[1]<<'\n';
+    o<<std::hex<<"0x"<<b[0]<<" 0x"<<b[1];
     return o.str();
 }
-
+#ifndef ONLINE
 std::string Board::str() const{
     std::ostringstream o;
     for (int i=0;i<BSIZE2;i++){
@@ -31,3 +31,4 @@ std::string Game::str(){
     o<<"step: "<<step<<"  col: "<<col<<"  B: "<<board.cnt(0)<<" W: "<<board.cnt(1)<<std::endl;
     return o.str();
 }
+#endif

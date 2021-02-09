@@ -179,7 +179,7 @@ void runDebugMode(){
     };
     while (std::cin>>cmd){
         if (cmd=="p" || cmd=="print") displayGame();
-        else if (cmd=="ph" || cmd=="printhex") cout<<game.board.repr();
+        else if (cmd=="ph" || cmd=="printhex") cout<<game.board.repr()<<'\n';
         else if (cmd=="q" || cmd=="quit" || cmd=="exit") return;
         else if (cmd=="m" || cmd=="makemove"){
             int x, y; std::cin>>x>>y;

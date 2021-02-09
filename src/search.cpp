@@ -3,38 +3,39 @@
 #include <vector>
 #include <algorithm>
 
-Val search_end2(const Board &board_old, int col){
-    u64 emptys=board_old.emptys();
+Val search_end2(const Board &cboard, int col){
+    u64 emptys=cboard.emptys();
     int p1=ctz(emptys); btr(emptys, p1);
     int p2=ctz(emptys);
-    Board board;
-    board=board_old;
+    Board board=cboard;
     int v1=-INF, v2=-INF;
     if (board.makemove(p1, col)){
         if (board.makemove(p2, !col)) v1=board.cnt(col)*2;
         else if (board.makemove(p2, col)) v1=board.cnt(col)*2;
         else v1=board.cnt(col)*2+1;
+        board=cboard; // rewind
     }
     if (board.makemove(p2, col)){
         if (board.makemove(p1, !col)) v2=board.cnt(col)*2;
         else if (board.makemove(p1, col)) v2=board.cnt(col)*2;
         else v2=board.cnt(col)*2+1;
+        return max(v1,v2)-64;
     }
-    int r=max(v1,v2);
-    if (r!=-INF) return r-64;
+    if (v1!=-INF) return v1-64;
     //pass
     if (board.makemove(p1, !col)){
         if (board.makemove(p2, col)) v1=board.cnt(col)*2;
         else if (board.makemove(p2, !col)) v1=board.cnt(col)*2;
         else v1=board.cnt(col)*2+1;
+        board=cboard; // rewind
     }
     if (board.makemove(p2, !col)){
         if (board.makemove(p1, col)) v2=board.cnt(col)*2;
         else if (board.makemove(p1, !col)) v2=board.cnt(col)*2;
         else v2=board.cnt(col)*2+1;
+        return max(v1,v2)-64;
     }
-    r=max(v1,v2);
-    if (r!=-INF) return r-64;
+    if (v1!=-INF) return v1-64;
     return board.cnt(col)*2-62;
 }
 

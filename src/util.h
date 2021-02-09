@@ -18,7 +18,7 @@ void assertprintf(bool val, const char *fmt, ...);
 #define DEBUGTREE
 #else
 inline void assertprintf(bool val, const char *fmt, ...){}
-#endif //DEBUG
+#endif
 
 inline int pos(int x, int y){assertprintf(x>=0 && x<8 && y>=0 && y<8, "invalid pos\n"); return x*8+y;}
 
@@ -76,10 +76,9 @@ inline void rotate_l(u64 &x){
 	x = (x & 0xaa00aa00aa00aa00) >> 8  | (x & 0x5500550055005500) << 1
 	  | (x & 0x00aa00aa00aa00aa) >> 1  | (x & 0x0055005500550055) << 8;
 }
-
-
+#ifndef ONLINE
 void showMask(u64 x);
-
+#endif
 struct u64iter{
 	u64 x;
     u64iter(u64 x):x(x){}

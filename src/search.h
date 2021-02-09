@@ -37,7 +37,9 @@ Val search_end(const Board &cboard, int col, Val alpha, Val beta, bool pass){
 #endif
 }
 
+#ifndef ONLINE
 Val search_exact(int depth, const Board &cboard, int col, Val alpha, Val beta, bool pass=0);
 Val search_normal(int depth, const Board &cboard, int col, Val alpha, Val beta, bool pass=0);
 int random_choice(const Board &board, int col);
 int think_choice(const Board &board, int col);
+#endif

@@ -16,9 +16,10 @@ void assertprintf(bool val, const char *fmt, ...){
 	}
 }
 #endif
-
+#ifndef ONLINE
 void showMask(u64 x){
 	for(int i=0;i<8;i++,puts(""))
 		for(int j=0;j<8;j++)
 			putchar((x>>(i*8+j)&1)?'*':'.');
 }
+#endif

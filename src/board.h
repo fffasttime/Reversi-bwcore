@@ -15,15 +15,12 @@ class Board{
 public:
 	u64 b[2];
 
-	void setStart(){
-		b[0]=0x810000000u;
-		b[1]=0x1008000000u;
-	}
+	void setStart(){b[0]=0x810000000,b[1]=0x1008000000;}
 	bool operator==(const Board &v) const{return b[0]==v.b[0] && b[1]==v.b[1];}
-
 	std::string repr() const;
+#ifndef ONLINE
 	std::string str() const;
-
+#endif
 	u64 genmove(int col) const{
 		// This part of code is brought from Zebra & stdrick
 		cu64 b_cur = b[col], b_opp = b[!col];
@@ -46,9 +43,7 @@ public:
 
 		return moves & ~(b_cur | b_opp);
 	}
-	bool testmove(int p, int col) const{
-		return bget(genmove(col),p);
-	}
+	bool testmove(int p, int col) const{return bget(genmove(col),p);}
 	bool makemove(int p, int col){
 		using namespace bitptn;
 		u64 &b_cur = b[col]; u64 &b_opp = b[!col];
@@ -90,23 +85,17 @@ public:
 
 class Game{
 public:
+#ifndef ONLINE
 	void print();
+#endif
 	std::string str();
-
 	Board board;
 	Board board_before[60];
 	int col_before[60];
-	int step;
-	int col;
-	Game(){
-		step=0; col=0;
-		board.setStart();
-	}
-	bool testmove(int p){
-		if (p<0 || p>=64) return false;
-		return board.testmove(p, col);
-	}
-	void makemove(int p){
+	int step,col;
+	Game(){ step=col=0; board.setStart(); }
+	bool testmove(int p){return p>=0 && p<64 && board.testmove(p, col);}
+	void makemove(int p, bool autopass=1){
 		assertprintf(p>=0 && p<64, "invalid move at %d\n", p);
 		assertprintf(board.testmove(p, col),"invalid move at %d\n", p);
 		assertprintf(step<60, "invalid makemove steps");
@@ -114,7 +103,7 @@ public:
 		board_before[step]=board;
 		step++;
 		board.makemove(p, col);
-		col=!col; if (!hasmove()) col=!col;
+		col=!col; if (autopass && !hasmove()) col=!col;
 	}
 	void unmakemove(){
 		assertprintf(step>=0, "unmakemove outbound\n");
@@ -123,7 +112,7 @@ public:
 		col=col_before[step];
 	}
 	void reset(){
-		step=0; col=0;
+		step=0, col=0;
 		board.setStart();
 	}
 	bool isend(){return !hasmove();}
