@@ -14,7 +14,8 @@ DL D DR      <<7 <<8 <<9
 class Board{
 public:
 	u64 b[2];
-
+	Board(){}
+	Board(u64 _0, u64 _1):b{_0,_1}{}
 	void setStart(){b[0]=0x810000000,b[1]=0x1008000000;}
 	bool operator==(const Board &v) const{return b[0]==v.b[0] && b[1]==v.b[1];}
 	std::string repr() const;
@@ -86,9 +87,9 @@ public:
 class Game{
 public:
 #ifndef ONLINE
-	void print();
-#endif
 	std::string str();
+#endif
+	std::string repr();
 	Board board;
 	Board board_before[60];
 	int col_before[60];

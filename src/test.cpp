@@ -150,12 +150,16 @@ int runTests(){
 
     board.setStart();
     cout<<search_normal(4, board, PBLACK, -INF, INF)<<std::endl;
-    board.makemove(37, PBLACK);
-    board.makemove(pos(5,3), PWHITE);
+
+    CHECK(search_end<4>(Board(0x3160756b5d257f01,0xa9e8a94a2da80fe), PBLACK, -INF, INF, false)==-6);
+
+    CHECK(think_choice(Board(0x3160752b1d051f01,0xa9e8ad4e2fa20fe), PBLACK)==58);
 
 #ifdef DEBUGTREE
+    board.b[0]=0x3160756b5d257f01;
+    board.b[1]=0xa9e8a94a2da80fe;
     debug_tree=new DebugTree;
-    cout<<"log tree "<<think_choice(board, PBLACK)<<'\n';
+    cout<<"log tree "<<search_end<4>(board, PBLACK, -INF, INF, false)<<'\n';
     debug_tree->write_html("debugtree.html", 6);
     delete debug_tree; debug_tree=nullptr;
 #endif 
@@ -205,6 +209,7 @@ void runDebugMode(){
             printf("evalptn: %f\n", evalPtn(game.board, game.col)/256.0);
         }
         else if (cmd=="tree"){
+        #ifdef DEBUGTREE
             debug_tree=new DebugTree;
             if (game.isend()) puts("no move");
             else{
@@ -213,12 +218,16 @@ void runDebugMode(){
             }
             debug_tree->write_html("debugtree.html", 6);
             delete debug_tree; debug_tree=nullptr;
+        #else
+            printf("macro DEBUGTREE hasn't defined\n");
+        #endif
         }
         else if (cmd=="think"){
             if (game.isend()) puts("no move");
             else{
                 int p=think_choice(game.board, game.col);
                 printf("%d %d\n", p/8, p%8);
+                printf("%s\n",searchstat.str().c_str());
             }
         }
         else if (cmd=="play"){
@@ -232,7 +241,7 @@ void runDebugMode(){
         else if (cmd=="cnt" || cmd=="count"){
             printf("B:%2d  W:%2d\n", game.cnt(0), game.cnt(1));
         }
-        else if (cmd=="ld"){
+        else if (cmd=="ld" || cmd=="board"){
             u64 x, y;
             std::cin>>std::hex>>x>>y;
             if (x&y){
@@ -269,6 +278,9 @@ void runDebugMode(){
             game.col=!game.col;
             printf("now col: %d\n",game.col);
         }
+        else if (cmd=="col"){
+            std::cin>>game.col;
+        }
         else if (cmd=="reset"){
             game.reset();
             if (echo) displayGame();
@@ -284,6 +296,7 @@ int main(int argc, char **argv){
     global_init();
     if (argc==2)
         runTests();
-    runDebugMode();
+    else
+        runDebugMode();
     return 0;
 }

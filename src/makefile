@@ -2,7 +2,7 @@ OPT =
 CXXFLAGS = -std=c++14 -g -Wall -DDEBUG $(OPT)
 objects = util.o board.o evalptn.o search.o debugtree.o
 
-all: $(objects) main.o
+all: $(objects) main.o cui.o
 	g++ $(CXXFLAGS) $(objects) cui.o main.o -o bwcore1.5.exe
 
 online: $(objects) online.o

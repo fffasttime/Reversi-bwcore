@@ -19,12 +19,6 @@ std::string Board::str() const{
     }
     return o.str();
 }
-
-void Game::print(){
-    std::cout<<board.str();
-    std::cout<<"step: "<<step<<"  col: "<<col<<"  B: "<<board.cnt(0)<<" W: "<<board.cnt(1)<<std::endl;
-}
-
 std::string Game::str(){
     std::ostringstream o;
     o<<board.str();
@@ -32,3 +26,10 @@ std::string Game::str(){
     return o.str();
 }
 #endif
+
+std::string Game::repr(){
+    std::ostringstream o;
+    o<<"board "<<board.repr()<<" col "<<col;
+    return o.str();
+}
+

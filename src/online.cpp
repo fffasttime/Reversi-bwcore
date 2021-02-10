@@ -13,19 +13,18 @@ int main(){
     Game game;
     int n,x,y; scanf("%d", &n);
     inc(i,2*n-1){
-        scanf("%d%d",&y,&x); 
+        scanf("%d%d",&x,&y); 
         if (x!=-1) game.makemove(pos(x,y), 0);
         else if (i) game.col=!game.col;
     }
-    clock_t tstart=clock();
     if (game.hasmove()){
-        int sp=random_choice(game.board, game.col);
-        printf("%d %d\n", sp%8, sp/8);
+        int sp=think_choice(game.board, game.col);
+        printf("%d %d\n", sp/8, sp%8);
     }
     else puts("-1 -1");
 
     //debug
-    printf("board: %s, col: %d, tt: %d", game.board.repr().c_str(), game.col, clock()-tstart);
+    printf("%s, %s\n", game.repr().c_str(), searchstat.str().c_str());
 
     return 0;
 }

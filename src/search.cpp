@@ -2,41 +2,63 @@
 #include "evalptn.h"
 #include <vector>
 #include <algorithm>
+#include <sstream>
+#include <iomanip>
+
+SearchStat searchstat;
+std::string SearchStat::str(){
+    std::ostringstream o;
+    o<<"dep:"<<depth;
+    o<<", "; o<<"cnt:"<<leafcnt;
+    o<<", "; o<<"tl:"<<tl;
+    o<<", pv:["; bool flag=0;
+    for (auto it:pv){
+        if (flag) o<<","; flag=1;
+        o<<'<'<<it.first/8<<','<<it.first%8<<">:";
+        o<<std::fixed<<std::setprecision(2)<<it.second;
+    }
+    o<<"]";
+    return o.str();
+}
 
 Val search_end2(const Board &cboard, int col){
+#ifdef DEBUGTREE
+    constexpr int depth=2, alpha=-INF, beta=INF;
+    DEBUGTREE_WARPPER_BEGIN
+#endif
+    searchstat.leafcnt++;
     u64 emptys=cboard.emptys();
-    int p1=ctz(emptys); btr(emptys, p1);
+    int p1=ctz(emptys); emptys=blsr(emptys);
     int p2=ctz(emptys);
     Board board=cboard;
     int v1=-INF, v2=-INF;
     if (board.makemove(p1, col)){
-        if (board.makemove(p2, !col)) v1=board.cnt(col)*2;
-        else if (board.makemove(p2, col)) v1=board.cnt(col)*2;
+        if (board.makemove(p2, !col) || board.makemove(p2, col)) v1=board.cnt(col)*2;
         else v1=board.cnt(col)*2+1;
         board=cboard; // rewind
     }
     if (board.makemove(p2, col)){
-        if (board.makemove(p1, !col)) v2=board.cnt(col)*2;
-        else if (board.makemove(p1, col)) v2=board.cnt(col)*2;
+        if (board.makemove(p1, !col) || board.makemove(p1, col)) v2=board.cnt(col)*2;
         else v2=board.cnt(col)*2+1;
-        return max(v1,v2)-64;
+        return std::max(v1,v2)-64;
     }
     if (v1!=-INF) return v1-64;
     //pass
     if (board.makemove(p1, !col)){
-        if (board.makemove(p2, col)) v1=board.cnt(col)*2;
-        else if (board.makemove(p2, !col)) v1=board.cnt(col)*2;
+        if (board.makemove(p2, col) || board.makemove(p2, !col)) v1=board.cnt(col)*2;
         else v1=board.cnt(col)*2+1;
         board=cboard; // rewind
     }
     if (board.makemove(p2, !col)){
-        if (board.makemove(p1, col)) v2=board.cnt(col)*2;
-        else if (board.makemove(p1, !col)) v2=board.cnt(col)*2;
+        if (board.makemove(p1, col) || board.makemove(p1, !col)) v2=board.cnt(col)*2;
         else v2=board.cnt(col)*2+1;
-        return max(v1,v2)-64;
+        return std::min(v1,v2)-64;
     }
     if (v1!=-INF) return v1-64;
     return board.cnt(col)*2-62;
+#ifdef DEBUGTREE
+    DEBUGTREE_WARPPER_END
+#endif
 }
 
 template<>
@@ -45,11 +67,10 @@ Val search_end<3>(const Board &cboard, int col, Val alpha, Val beta, bool pass){
     constexpr int depth=3;
     DEBUGTREE_WARPPER_BEGIN
 #endif
-    constexpr int depth=3;
     u64 move=cboard.genmove(col);
-    if (unlikely(move==0)){
+    if (!move){
         if (pass) return eval_end(cboard, col); 
-        return -search_end<depth>(cboard, !col, -beta, -alpha, 1);
+        return -search_end<3>(cboard, !col, -beta, -alpha, 1);
     }
     Val val=-INF;
     for (auto p:u64iter(move)){
@@ -67,12 +88,12 @@ Val search_exact(int depth, const Board &cboard, int col, Val alpha, Val beta, b
 #ifdef DEBUGTREE
     DEBUGTREE_WARPPER_BEGIN
 #endif
-    if (depth==5) return search_end<5>(cboard, col, alpha, beta, 1);
     u64 move=cboard.genmove(col);
-    if (unlikely(move==0)){
+    if (!move){
         if (pass) return eval_end(cboard, col); 
         return -search_exact(depth, cboard, !col, -beta, -alpha, 1);
     }
+    if (depth==5) return search_end<5>(cboard, col, alpha, beta, 0);
     Val val=-INF;
     for (auto p:u64iter(move)){
         Board board=cboard.makemove_r(p, col);
@@ -95,11 +116,14 @@ Val search_normal(int depth, const Board &cboard, int col, Val alpha, Val beta, 
     DEBUGTREE_WARPPER_BEGIN
 #endif
     u64 move=cboard.genmove(col);
-    if (unlikely(move==0)){
+    if (!move){
         if (pass) return eval_end(cboard, col); 
         return -search_normal(depth, cboard, !col, -beta, -alpha, 1);
     }
-    if (depth==0){
+    int remain=popcnt(cboard.emptys());
+    if (remain==5) return search_end<5>(cboard, col, alpha, beta, 0);
+    if (depth==0 && remain>5){
+        searchstat.leafcnt++;
         return evalMidGame(cboard, col);
     }
     Val val=-INF;
@@ -123,14 +147,15 @@ int random_choice(const Board &board, int col){
     return pos[rand()%pos.size()];
 }
 
-int search_root(int depth, const Board &cboard, int col, Val delta){
+std::vector<PosVal> search_root(int depth, const Board &cboard, int col, Val delta){
 #ifdef DEBUGTREE
     if (debug_tree)
         debug_tree->step_in(__func__,depth, cboard, col, -INF, INF);
 #endif
+    searchstat.depth=depth;
     u64 move=cboard.genmove(col);
     assertprintf(move, "nowhere to play\n");
-    std::vector<std::pair<int, Val>> result;
+    std::vector<PosVal> result;
     Val alpha=-INF;
     for (auto p:u64iter(move)){
         Board board=cboard.makemove_r(p, col);
@@ -144,9 +169,15 @@ int search_root(int depth, const Board &cboard, int col, Val delta){
     result.erase(
     std::remove_if(result.begin(),result.end(),[&](const auto &x){return x.second<alpha-delta;}),
         result.end());
-    return result[rand()%result.size()].first;
+    return result;
 }
 
 int think_choice(const Board &board, int col){
-    return search_root(5, board, col, 0);
+    searchstat.leafcnt=0;
+    searchstat.timing();
+    auto moves=search_root(5, board, col, 0);
+    searchstat.timing();
+    searchstat.pv.clear(); 
+    searchstat.pv.assign(moves.begin(), moves.end());
+    return moves[rand()%moves.size()].first;
 }

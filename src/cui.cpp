@@ -123,11 +123,11 @@ void gameEnd(){
 	iPrint();
 	printf("B:%2d  W:%2d\n", game.cnt(PBLACK), game.cnt(PWHITE));
 	if (game.winner()==PWHITE)
-		printf(" Winner:White");
+		printf(" White Win"), logprintf("white win\n");
 	else if (game.winner()==PBLACK)
-		printf(" Winner:Black");
+		printf(" Black Win"), logprintf("black win\n");
 	else
-		printf(" Draw!");
+		printf(" Draw!"), logprintf("draw\n");
 	gotoXY({0,20});
 	printf("[·µ»Ø]");
 	while (1){
@@ -153,17 +153,16 @@ void gamePlay(){
 			sp=p.pos();
 		}
 		else{
-			clock_t t0 = clock();
 			if (gamemode[game.col] == 0) 
 				sp = random_choice(game.board, game.col);
 			else
 				sp = think_choice(game.board, game.col);
-			logprintf("time: %dms\n", (int)clock()-t0);
+			logprintf("%s\n", searchstat.str().c_str());
 			Sleep(1);
 		}
 		logprintf("m %d %d\n", sp/8, sp%8);
-		logprintf("%s", game.str().c_str());
 		game.makemove(sp);
+		logprintf("%s\n%s", game.repr().c_str(), game.str().c_str());
 
 		gotoXY(PlocToMloc(sp));
 		if (game.col == PWHITE) printf("¡ð");
@@ -178,6 +177,8 @@ void gamePlay(){
 void gameStart(){
 	game.reset();
 	iPrint();
+	auto t=time(nullptr); logprintf("Game start at %s", ctime(&t));
+	logprintf("black mode: %d , white mode: %d\n", gamemode[0], gamemode[1]);
 }
 
 void showAbout(){

@@ -22,7 +22,7 @@ inline void assertprintf(bool val, const char *fmt, ...){}
 
 inline int pos(int x, int y){assertprintf(x>=0 && x<8 && y>=0 && y<8, "invalid pos\n"); return x*8+y;}
 
-inline u64 popcnt(cu64 x){
+inline int popcnt(cu64 x){
 	u64 ret;
 	asm("popcnt %1,%0":"=r"(ret):"r"(x));
 	return ret;
