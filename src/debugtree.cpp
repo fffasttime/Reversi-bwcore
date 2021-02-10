@@ -7,14 +7,18 @@ void DebugTreeNode::write_board(FILE *out){
     int movepos=-1;
     if (fa!=nullptr) movepos=tzcnt(fa->board.occupys()^board.occupys());
     for (int i=0;i<BSIZE2;i++){
-        if (i==movepos) fprintf(out, "<font style=\"background: pink\">");
-        if (bget(board.b[0]&board.b[1], i)) assert(false, "pos %d has two pieces\n", i);
-        else if (bget(board.b[0], i)) fprintf(out,"‚óè");
-        else if (bget(board.b[1], i)) fprintf(out,"‚óã");
-        else if (board.testmove(i, col)) fprintf(out,"Ôºã");
+        if (i==movepos) fprintf(out, "<font style='background: pink'>");
+        if (bget(board.b[0]&board.b[1], i)) assertprintf(false, "pos %d has two pieces\n", i);
+        else if (bget(board.b[0], i)) fprintf(out,"°Ò");
+        else if (bget(board.b[1], i)) fprintf(out,"°");
+        else if (board.testmove(i, col)) fprintf(out,"£´");
         else fprintf(out,"&nbsp;");
         if (i==movepos) fprintf(out, "</font>");
-        if (i%8==7) fprintf(out,"<br>");
+        if (i%8==7){
+            fprintf(out, "|");
+            if (i/8==2) fprintf(out, "   board %s col %d", board.repr().c_str(), col);
+            fprintf(out,"<br>");
+        }
     }
     fprintf(out, "</code>");
 }
@@ -22,15 +26,21 @@ void DebugTreeNode::write_board(FILE *out){
 void DebugTreeNode::write_html(FILE *out, int d, int d_limit){
     if (d==d_limit) return;
 
-    char summary_style[40]="";
-    if(ret<=alpha) //cut node
-        sprintf(summary_style," style=\"background: %s;\"", "gold");
-    fprintf(out,"<details><summary><code%s>",summary_style);
+    fprintf(out,"<details><summary><code>");
 
-    fprintf(out,"%s(depth:%d, col:%d, alpha:%.2f, beta:%.2f) ch:%2d\n move:%2d  ret:%.2f",
-        fun_name.c_str(), depth, col, alpha, beta, (int)ch.size(), (int)popcnt(board.genmove(col)), ret);
+    fprintf(out,"%s(depth:%d, col:%d, alpha:%.2f, beta:%.2f) -ret:",
+        fun_name.c_str(), depth, col, alpha, beta);
+
+    if (ret<=alpha) fprintf(out, "<font style='background: gold'>");
+    else if (ret>=beta) fprintf(out, "<font style='background: lightblue'>");
+    fprintf(out, "%.2f", -ret);
+    if (ret<=alpha || ret>=beta) fprintf(out,"</font>");
+
+    fprintf(out," move:%2d ch:%2d", (int)popcnt(board.genmove(col)), (int)ch.size());
+
     if (popcnt(board.genmove(col))==0) //pass node
-        fprintf(out," (pass)");
+        fprintf(out," <font style='background: lightgray'>(pass)</font>");
+
     fprintf(out,"</code></summary>");
     
     fprintf(out,"<div style=\"margin-left:50px\">\n");
@@ -56,7 +66,7 @@ void DebugTree::step_in(const std::string &fun_name, int depth, const Board &boa
 }
 
 void DebugTree::write_html(std::string file, int d_limit){
-    assert(root!=nullptr, "DebugTree is empty\n");
+    assertprintf(root!=nullptr, "DebugTree is empty\n");
     FILE *out=fopen(file.c_str(),"w");
     root->write_html(out, 0, d_limit);
     fclose(out);

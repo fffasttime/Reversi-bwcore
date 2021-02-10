@@ -4,11 +4,12 @@
 
 原有代码冗杂且效率低(主要代码4k+行)，可维护性差，全部重构bwcore1.3~1.4(impbwcore)代码。
 
-bwcore1.5(strongbwcore)对目前成熟的技术进行实验和调优。主要目标为快速终局搜索、快速位运算估值、pvs搜索、置换表等。实验性的内容之后考虑。
+bwcore1.5(strongbwcore)仍然使用较传统的搜索算法。主要为快速终局搜索、快速位运算估值、pvs搜索、置换表等。实验性的内容之后考虑。
 
 ## 辅助文件
 
-* boardhex.html 用于产生和查看棋盘的十六进制码。
+* boardhex.html 用于构造棋盘的十六进制码。
+* 调试时可生成搜索树debugtree.html。父节点的ret应为所有子节点ret取负中的最大值。若节点的ret>=beta，则剪枝。
 
 ## 棋盘数据结构
 
@@ -52,6 +53,56 @@ bwcore1.5(strongbwcore)对目前成熟的技术进行实验和调优。主要目
 * c52, c33 角
 * wmob, wodd, wb
 
-使用e2~e4,k8~k4时，无需对棋盘变换。c52需要全部8种变换。c33需要`flipv,fliph,r180`，e1需要`flipv,lrotate,rrotate`。
+使用e2-e4,k8-k4时，无需对棋盘变换。c52需要全部8种变换。c33需要`flipv,fliph,r180`，e1需要`fliph,lrotate,rrotate`。
 
-对长度9-10的模板进行三进制转换。默认黑色(先手方)在二进制下为高位，三进制下位权为2。二进制下低位在三进制下为高位。占内存约10MB。
+对长度9-10的模板进行三进制转换。约定默认黑色(先手方)在二进制下为高位，三进制下位权为2。二进制下低位在三进制下为高位。占内存约10MB。
+
+### 文件格式
+
+主要由16位整数构成。
+
+| version | part count | pattern type count | pattern type length        | pattern coeff data | checksum | desc_str_len | desc_str | generate timestamp |
+| ------- | ---------- | ------------------ | -------------------------- | ------------------ | -------- | ------------ | -------- | ------------------ |
+| int16   | int16      | int16              | int16*(pattern type count) | int16*             | int16    | int16        | cstring  | int64              |
+
+## 测试程序
+
+`make test` 生成 `test.exe`
+
+`test.exe --` 执行检查。
+
+#### 命令行模式
+
+`test.exe ` 运行命令行测试模式
+
+`p` `print` 显示当前局面
+
+`ph` `printhex` 当前局面的十六进制编码
+
+`m x y` `makemove x y` 在x,y处下子，坐标从0,0开始
+
+`u` `unmakemove` 撤销一步 
+
+`evalptn` 当前局面的模板估值
+
+`think` 思考下一步
+
+`play` 思考下一步并执行
+
+`tree` 搜索并保存搜索树
+
+`cnt` 统计黑白棋子数
+
+`reset` 重置为游戏开始
+
+`ld hex0 hex1` `board hex0 hex1` 将当前局面置为十六进制编码值
+
+`flipv` `fliph` `rotatel` `rotater` 变换棋盘
+
+`cswap` 交换棋盘黑白颜色
+
+`fcol` 交换当前玩家颜色
+
+`col 0` `col 1` 设置当前玩家颜色(0黑，1白)
+
+`q` `quit` `exit` 退出

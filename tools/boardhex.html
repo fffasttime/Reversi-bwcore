@@ -8,6 +8,12 @@
     .cell{
         width: 50px;
         height: 50px;
+        background-color:skyblue
+    }
+    .selectcell{
+        width: 50px;
+        height: 50px;
+        background-color:skyblue
     }
     .black{
         background-color: #000000
@@ -17,42 +23,112 @@
     }
     </style>
 </head>
-<body>
-    <table id="board_occupy" border="1">
+<body onselectstart="return false;">
+    <table> <td>
+    <table border="1">
+    <td class='selectcell black' id='select_b'></td>
+    <td class='selectcell white' id='select_w'></td>
+    </table></td> <td>
+    <table border="1" style="margin-left: 50px">
+    <td class='selectcell black' id='select_show'></td>
+    </table></td>
+    </table>
+    <table id="board_occupy" border="1" oncontextmenu="return false;">
     </table>
     <p>
-    occupy:&nbsp<input type="text" id="hex_occupy"/>
+    <code>occupy: </code><input type="text" id="hex_occupy"/>
+    <input type="button" value="copy" onclick=
+        "document.getElementById('hex_occupy').select();document.execCommand('copy');"/>
     </p>
+    <code>board: </code><input type="text" id="hex_board" style="width: 400px"/>
+    <input type="button" value="copy" onclick=
+        "document.getElementById('hex_board').select();document.execCommand('copy');"/>
     <script src="https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js"></script>
     <script>
-    var mask_occupy0=0, mask_occupy1=0;
+    var mask_black0=0, mask_black1=0;
+    var mask_white0=0, mask_white1=0;
+    var cur_color=0, cur_clearing = false;
     for (var i=0;i<8;i++){
         $("#board_occupy").append("<tr></tr>");
         for (var j=0;j<8;j++){
             $("#board_occupy").children().eq(0).children().eq(i).append("<td class='cell'/>");
         }
     }
-    $(".cell").mousedown(function(){
+    function tohex(hi, lo){
+        return `0x${(hi>>>0).toString(16).padStart(8, '0')}${(lo>>>0).toString(16).padStart(8, '0')}`;
+    }
+    function updateText(){
+        $("#hex_board").val(tohex(mask_black1, mask_black0) 
+            + '  ' + tohex(mask_white1, mask_white0));
+        var mask_occupy0=mask_black0|mask_white0;
+        var mask_occupy1=mask_black1|mask_white1;
+        $("#hex_occupy").val(tohex(mask_occupy1, mask_occupy0));
+    }
+    updateText();
+    function flip(x, y){
+        var p=x*8+y;
+        if (p>=32){
+            var bit=1<<(p-32);
+            mask_black1&=~bit;
+            mask_white1&=~bit;
+            if (!cur_clearing){
+                if (cur_color==0) mask_black1|=bit;
+                if (cur_color==1) mask_white1|=bit;
+            }
+        }
+        else{
+            var bit=1<<p;
+            mask_black0&=~bit;
+            mask_white0&=~bit;
+            if (!cur_clearing){
+                if (cur_color==0) mask_black0|=bit;
+                if (cur_color==1) mask_white0|=bit;
+            }
+        }
+        var cur_cell=$("#board_occupy").children().eq(0).children().eq(x).children().eq(y);
+        cur_cell.removeClass("black white");
+        if (!cur_clearing){
+            if (cur_color==0) cur_cell.addClass("black");
+            if (cur_color==1) cur_cell.addClass("white");
+        }
+        updateText();
+    }
+    $(".selectcell").mousedown(function(){
+        $("#select_show").removeClass("black white");
+        if ($(this).hasClass("black")){
+            cur_color=0;
+            $("#select_show").addClass("black");
+        }
+        else if ($(this).hasClass("white")){
+            cur_color=1;
+            $("#select_show").addClass("white");
+        }
+        else{
+            cur_color=2;
+        }
+    });
+    var mousedown=false;
+    $(".cell").mousedown(function(e){
         var x=$(this).parent().index();
         var y=$(this).index();
-        var p=x*8+y, r;
-        if (p>=32){
-            mask_occupy1=mask_occupy1^(1<<(p-32));
-            r=mask_occupy1&(1<<(p-32));
-        }
-        else{
-            mask_occupy0=mask_occupy0^(1<<p);
-            r=mask_occupy0&(1<<p);
-        }
-        if (r){
-            $(this).addClass("black");
-        }
-        else{
-            $(this).removeClass("black");
-        }
-        $("#hex_occupy").val(`${(mask_occupy1>>>0).toString(16).padStart(8, '0')}${(mask_occupy0>>>0).toString(16).padStart(8, '0')}`);
+        if (e.which==3) cur_clearing=true;
+        flip(x,y);
     });
-
+    $(document).mouseup(function(e){
+        mousedown=false;
+        cur_clearing=false;
+    });
+    $(document).mousedown(function(e){
+        mousedown=true;
+        if (e.which==3) cur_clearing=true;
+    });
+    $(".cell").mouseenter(function(){
+        if (mousedown){
+            var x=$(this).parent().index();
+            var y=$(this).index();
+            flip(x,y);
+        }
+    });
     </script>
 </body>
 </html>

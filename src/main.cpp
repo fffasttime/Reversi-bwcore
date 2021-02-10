@@ -1,22 +1,16 @@
 #include "board.h"
 #include <iostream>
+#include "cui.h"
+#include "evalptn.h"
 using std::cin; using std::cout;
 
+void global_init(){
+    initPtnConfig();
+    loadPtnData();
+}
+
 int main(){
-    Game game;
-    while (1){
-        char c; int x,y;
-        cin>>c;
-        if (c=='s'){
-            showMask(game.genmove());
-        }
-        else{
-            if (c=='m'){
-                int x,y; cin>>x>>y;
-                game.makemove(x,y);
-            }
-            else if (c=='u') game.unmakemove();
-            game.print();
-        }
-    }
+    global_init();
+    runConsole();
+    return 0;
 }

@@ -14,15 +14,15 @@ typedef unsigned long long u64;
 typedef const u64& cu64;
 
 #ifdef DEBUG
-void assert(bool val, const char *fmt, ...);
+void assertprintf(bool val, const char *fmt, ...);
 #define DEBUGTREE
 #else
-inline void assert(bool val, const char *fmt, ...){}
-#endif //DEBUG
+inline void assertprintf(bool val, const char *fmt, ...){}
+#endif
 
-inline int pos(int x, int y){assert(x>=0 && x<8 && y>=0 && y<8, "invalid pos\n"); return x*8+y;}
+inline int pos(int x, int y){assertprintf(x>=0 && x<8 && y>=0 && y<8, "invalid pos\n"); return x*8+y;}
 
-inline u64 popcnt(cu64 x){
+inline int popcnt(cu64 x){
 	u64 ret;
 	asm("popcnt %1,%0":"=r"(ret):"r"(x));
 	return ret;
@@ -52,7 +52,7 @@ inline bool bget(cu64 x, u64 p){
 }
 inline void bts(u64 &x, u64 p){asm("bts %1,%0\n":"+r"(x):"r"(p));}
 inline void btr(u64 &x, u64 p){asm("btr %1,%0\n":"+r"(x):"r"(p));}
-inline int ctz(u64 x){assert(x, "ctz 0 is undefined behavior\n"); return __builtin_ctzll(x);}
+inline int ctz(u64 x){assertprintf(x, "ctz 0 is undefined behavior\n"); return __builtin_ctzll(x);}
 inline int tzcnt(u64 x){if (x==0) return 64; return __builtin_ctzll(x);}
 inline void flip_h(u64 &x){asm("bswap %0\n":"+r"(x));}
 inline void flip_v(u64 &x){
@@ -76,10 +76,9 @@ inline void rotate_l(u64 &x){
 	x = (x & 0xaa00aa00aa00aa00) >> 8  | (x & 0x5500550055005500) << 1
 	  | (x & 0x00aa00aa00aa00aa) >> 1  | (x & 0x0055005500550055) << 8;
 }
-
-
+#ifndef ONLINE
 void showMask(u64 x);
-
+#endif
 struct u64iter{
 	u64 x;
     u64iter(u64 x):x(x){}
