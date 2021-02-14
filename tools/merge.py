@@ -1,19 +1,17 @@
 import re
 
 files=['util.h','util.cpp', 
-'bitptn.h', 'board.h', 'board.cpp', 
+'board.h', 'board.cpp', 
 'evalptn.h', 'evalptn.cpp', 
 'search.h', 'search.cpp',
 'online.cpp']
 
 head = '''#include <bits/stdc++.h>
-#define ONLINE
-#define EVAL_FILE "data/reversicoeff.bin"
 '''
 source = ''
 
 for file in files:
-    with open('../src/'+file, 'r') as f:
+    with open('src/'+file, 'r') as f:
         source += f.read() + '\n'
 
 source = re.sub(r"#include.*\n", "", source);
@@ -28,5 +26,5 @@ source = re.sub(r"assertprintf\(.*?\);","",source);
 source = re.sub(r"\s*\n","\n",source);
 source = re.sub(r"\n+","\n",source);
 
-with open('../data/botzone.cpp', 'w') as f:
+with open('data/botzone.cpp', 'w') as f:
     f.write(head + source)

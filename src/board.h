@@ -1,7 +1,6 @@
 #pragma once
 
 #include "util.h"
-#include "bitptn.h"
 #include <string>
 #include <algorithm>
 

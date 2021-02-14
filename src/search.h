@@ -30,7 +30,8 @@ Val search_end(const Board &cboard, int col, Val alpha, Val beta, bool pass){
     Val val=-INF;
     for (auto p:u64iter(move)){
         Board board=cboard.makemove_r(p, col);
-        val=max(val, -search_end<depth-1>(board, !col, -beta, -alpha, 0));
+        if constexpr (depth==3) val=max(val, -search_end2(board, !col));
+        else val=max(val, -search_end<depth-1>(board, !col, -beta, -alpha, 0));
         if (val>=beta) return val;
         if (val>alpha) alpha=val;
     }
@@ -52,7 +53,6 @@ struct SearchStat{
 };
 
 #ifndef ONLINE
-template<> Val search_end<3>(const Board &cboard, int col, Val alpha, Val beta, bool pass);
 Val search_exact(int depth, const Board &cboard, int col, Val alpha, Val beta, bool pass=0);
 Val search_normal(int depth, const Board &cboard, int col, Val alpha, Val beta, bool pass=0);
 int random_choice(const Board &board, int col);

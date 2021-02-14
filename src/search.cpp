@@ -13,7 +13,7 @@ std::string SearchStat::str(){
     o<<", "; o<<"tl:"<<tl;
     o<<", pv:["; bool flag=0;
     for (auto it:pv){
-        if (flag) o<<","; flag=1;
+        if (flag) o<<",", flag=1;
         o<<'<'<<it.first/8<<','<<it.first%8<<">:";
         o<<std::fixed<<std::setprecision(2)<<it.second;
     }
@@ -56,29 +56,6 @@ Val search_end2(const Board &cboard, int col){
     }
     if (v1!=-INF) return v1-64;
     return board.cnt(col)*2-62;
-#ifdef DEBUGTREE
-    DEBUGTREE_WARPPER_END
-#endif
-}
-
-template<>
-Val search_end<3>(const Board &cboard, int col, Val alpha, Val beta, bool pass){
-#ifdef DEBUGTREE
-    constexpr int depth=3;
-    DEBUGTREE_WARPPER_BEGIN
-#endif
-    u64 move=cboard.genmove(col);
-    if (!move){
-        if (pass) return eval_end(cboard, col); 
-        return -search_end<3>(cboard, !col, -beta, -alpha, 1);
-    }
-    Val val=-INF;
-    for (auto p:u64iter(move)){
-        Board board=cboard.makemove_r(p, col);
-        val=max(val, -search_end2(board, !col));
-        if (val>=beta) return val;
-    }
-    return val;
 #ifdef DEBUGTREE
     DEBUGTREE_WARPPER_END
 #endif

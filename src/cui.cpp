@@ -81,7 +81,8 @@ Ploc getCurClick(){
 
 void iPrint(){
 	gotoXY({0,0});
-	printf("¨X"); for (int i = 1; i < BSIZE; i++) printf("¨T¨j"); printf("¨T¨[\n");
+	printf("¨X"); for (int i = 1; i < BSIZE; i++) printf("¨T¨j"); 
+	printf("¨T¨[\n");
 	inc(i,BSIZE){
 		printf("¨U");
 		inc(j, BSIZE){
@@ -92,12 +93,12 @@ void iPrint(){
 		}
 		printf("\n");
 		if (i < BSIZE - 1){
-			printf("¨d");
-			for (int j = 0; j < 7; j++) printf("¨T¨p"); printf("¨T¨g");
+			printf("¨d"); for (int j = 0; j < 7; j++) printf("¨T¨p"); 
+			printf("¨T¨g");
 		}
 		else{
-			printf("¨^");
-			for (int j = 0; j < 7; j++) printf("¨T¨m"); printf("¨T¨a");
+			printf("¨^"); for (int j = 0; j < 7; j++) printf("¨T¨m"); 
+			printf("¨T¨a");
 		}
 		printf("\n");
 	}

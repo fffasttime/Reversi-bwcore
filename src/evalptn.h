@@ -9,4 +9,4 @@ void readShort(FILE *stream, short &tar);
 void initPtnConfig();
 void loadPtnData();
 int evalPtn(const Board &board, int col);
-#endif
+#endif //ONLINE
