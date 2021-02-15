@@ -70,7 +70,7 @@ public:
 		return r;
 	}
 	int cnt(int col) const{return popcnt(b[col]);}
-	u64 hash();
+	u64 hash() const{return (b[0]*19260817)^b[1];}
 
 	void cswap(){std::swap(b[0],b[1]);}
 	void flip_h(){::flip_h(b[0]);::flip_h(b[1]);}
@@ -82,6 +82,7 @@ public:
 
 	int operator[](int p) const{return 2-2*bget(b[0], p)-bget(b[1], p);}
 };
+typedef const Board &CBoard;
 
 class Game{
 public:

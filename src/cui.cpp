@@ -158,7 +158,8 @@ void gamePlay(){
 				sp = random_choice(game.board, game.col);
 			else
 				sp = think_choice(game.board, game.col);
-			logprintf("%s\n", searchstat.str().c_str());
+			logprintf("%s", debugout.str().c_str());
+			// logprintf("%s\n", searchstat.str().c_str());
 			Sleep(1);
 		}
 		logprintf("m %d %d\n", sp/8, sp%8);

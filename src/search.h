@@ -4,27 +4,29 @@
 #include "time.h"
 #include <algorithm>
 #include <vector>
+#include <sstream>
 using std::max;
 
 typedef float Val;
 constexpr int INF=256;
-typedef std::pair<int,Val> PosVal;
+typedef std::pair<int, Val> PosVal;
+extern std::ostringstream debugout;
 
 #ifdef DEBUGTREE
     #include "debugtree.h"
 #endif
 
-Val search_end2(const Board &board, int col);
-inline Val eval_end(const Board &board, int col){return popcnt(board.b[col])-popcnt(board.b[!col]);}
+Val search_end2(CBoard board, int col);
+inline Val eval_end(CBoard board, int col){return popcnt(board.b[col])-popcnt(board.b[!col]);}
 
 template<int depth>
-Val search_end(const Board &cboard, int col, Val alpha, Val beta, bool pass){
+Val search_end(CBoard cboard, int col, Val alpha, Val beta, bool pass){
 #ifdef DEBUGTREE
     DEBUGTREE_WARPPER_BEGIN
 #endif
     u64 move=cboard.genmove(col);
     if (!move){
-        if (pass) return eval_end(cboard, col); 
+        if (pass) return eval_end(cboard, col);
         return -search_end<depth>(cboard, !col, -beta, -alpha, 1);
     }
     Val val=-INF;
@@ -53,10 +55,10 @@ struct SearchStat{
 };
 
 #ifndef ONLINE
-Val search_exact(int depth, const Board &cboard, int col, Val alpha, Val beta, bool pass=0);
-Val search_normal(int depth, const Board &cboard, int col, Val alpha, Val beta, bool pass=0);
-int random_choice(const Board &board, int col);
-int think_choice(const Board &board, int col);
+Val search_exact(int depth, CBoard cboard, int col, Val alpha, Val beta, bool pass=0);
+Val search_normal(int depth, CBoard cboard, int col, Val alpha, Val beta, bool pass=0);
+int random_choice(CBoard board, int col);
+int think_choice(CBoard board, int col);
 
 extern SearchStat searchstat;
 #endif
