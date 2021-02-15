@@ -50,7 +50,7 @@ Val search_end2(CBoard cboard, int col){
         else v2=board.cnt(col)*2+1;
         return std::max(v1,v2)-64;
     }
-    if (v1!=-INF) return v1-64;
+    if (likely(v1!=-INF)) return v1-64;
     //pass
     if (board.makemove(p1, !col)){
         if (board.makemove(p2, col) || board.makemove(p2, !col)) v1=board.cnt(col)*2;
@@ -98,8 +98,8 @@ Val evalMidGame(CBoard cboard, int col){
 
 Val search_normal1(int depth, CBoard cboard, int col, Val alpha, Val beta, bool pass=0){
     u64 move=cboard.genmove(col);
-    if (!move){
-        if (pass) {searchstat.leafcnt++; return eval_end(cboard, col);}
+    if (unlikely(!move)){
+        if (unlikely(pass)) {searchstat.leafcnt++; return eval_end(cboard, col);}
         return -search_normal1(depth, cboard, !col, -beta, -alpha, 1);
     }
     if (depth==0){
@@ -135,8 +135,30 @@ Val search_normal(int depth, CBoard cboard, int col, Val alpha, Val beta, bool p
         firstp = ttnode->pv;
         hash_hit = true;
         hash_hitc++;
+        if (ttnode->depth==depth){
+            Val val=ttnode->val;
+            if (ttnode->type>=2) alpha=max(alpha, val);
+            if (alpha>=beta) return alpha;
+        }
     }
 #endif
+    // presearch
+    if (depth>3){
+        auto t_move=move;
+        btr(t_move, firstp);
+        Val t_alpha;
+        if (depth>5) t_alpha=-search_normal(depth-4, cboard.makemove_r(firstp, col), !col, -INF, INF);
+        else t_alpha=-search_normal1(depth-4, cboard.makemove_r(firstp, col), !col, -INF, INF);
+        for (auto p:u64iter(move)){
+            Val ret;
+            if (depth>5) ret=-search_normal(depth-4, cboard.makemove_r(p, col), !col, -INF, -t_alpha);
+            else ret=-search_normal1(depth-4, cboard.makemove_r(p, col), !col, -INF, -t_alpha);
+            if (ret>t_alpha){
+                t_alpha=ret;
+                firstp=p;
+            }
+        }
+    }
     int pv = firstp;
     btr(move, firstp);
     Val val=-search_normal(depth-1, cboard.makemove_r(firstp, col), !col, -beta, -alpha);
@@ -158,14 +180,16 @@ Val search_normal(int depth, CBoard cboard, int col, Val alpha, Val beta, bool p
     }
 BETA_CUT:
 #if 1
-    if (searchstat.depth-depth<4){
     if (!hash_hit){ //hash update
         ttnode->hash=cboard.hash();
         ttnode->col=col;
         ttnode->depth=depth;
     }
     ttnode->pv=pv;
-    }
+    ttnode->val=val;
+    if (val<=alpha) ttnode->type=1;
+    else if (val>=beta) ttnode->type=2;
+    else ttnode->type=3;
 #endif
     return val;
 #ifdef DEBUGTREE
@@ -181,14 +205,16 @@ int random_choice(CBoard board, int col){
     return pos[rand()%pos.size()];
 }
 
+std::ostringstream debugout;
+
 void search_exact_root(CBoard cboard, int col, Val delta){
-#ifdef DEBUGTREE
-    if (debug_tree)
-        debug_tree->step_in(__func__,depth, cboard, col, -INF, INF);
-#endif
     searchstat.leafcnt=0;
     searchstat.timing();
     searchstat.depth=popcnt(cboard.emptys());
+#ifdef DEBUGTREE
+    if (debug_tree)
+        debug_tree->step_in(__func__,searchstat.depth, cboard, col, -INF, INF);
+#endif
     u64 move=cboard.genmove(col);
     assertprintf(move, "nowhere to play\n");
     std::vector<PosVal> result;
@@ -211,7 +237,8 @@ void search_exact_root(CBoard cboard, int col, Val delta){
     searchstat.pv.assign(result.begin(), result.end());
     debugout<<searchstat.str()<<'\n';
 }
-void search_root(int depth, CBoard cboard, int col, Val delta){
+
+int search_root(int depth, CBoard cboard, int col, Val delta, int suggestp=-1){
 #ifdef DEBUGTREE
     if (debug_tree)
         debug_tree->step_in(__func__,depth, cboard, col, -INF, INF);
@@ -224,11 +251,16 @@ void search_root(int depth, CBoard cboard, int col, Val delta){
     assertprintf(move, "nowhere to play\n");
     std::vector<PosVal> result;
     Val alpha=-INF;
+    if (suggestp!=-1){
+        btr(move, suggestp);
+        alpha = -search_normal(depth-1, cboard.makemove_r(suggestp, col), !col, -INF, -alpha+delta+0.01, 0);
+        result.emplace_back(suggestp, alpha);
+    }
     for (auto p:u64iter(move)){
         Board board=cboard.makemove_r(p, col);
         Val ret;
         ret=-search_normal(depth-1, board, !col, -INF, -alpha+delta+0.01, 0);
-        alpha=max(alpha, ret);
+        if (ret>alpha) alpha=ret, suggestp=p;
         if (ret>=alpha-delta) result.emplace_back(p, ret);
     }
     debugout<<hash_hitc<<' ';
@@ -241,9 +273,8 @@ void search_root(int depth, CBoard cboard, int col, Val delta){
     searchstat.timing();
     searchstat.pv.clear(); 
     searchstat.pv.assign(result.begin(), result.end());
+    return suggestp;
 }
-
-std::ostringstream debugout;
 
 int think_choice(CBoard board, int col){
     debugout.str("");
@@ -252,8 +283,9 @@ int think_choice(CBoard board, int col){
         debugout<<searchstat.str()<<'\n';
     }
     else{
+        int p=-1;
         for (int depth=4;depth<=8;depth++){
-            search_root(depth, board, col, 0);
+            p = search_root(depth, board, col, 0, p);
             debugout<<searchstat.str()<<'\n';
         }
     }

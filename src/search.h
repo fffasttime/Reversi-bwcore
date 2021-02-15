@@ -10,7 +10,6 @@ using std::max;
 typedef float Val;
 constexpr int INF=256;
 typedef std::pair<int, Val> PosVal;
-extern std::ostringstream debugout;
 
 #ifdef DEBUGTREE
     #include "debugtree.h"
@@ -54,11 +53,12 @@ struct SearchStat{
     std::string str();
 };
 
+Val search_normal(int depth, CBoard cboard, int col, Val alpha, Val beta, bool pass=0);
 #ifndef ONLINE
 Val search_exact(int depth, CBoard cboard, int col, Val alpha, Val beta, bool pass=0);
-Val search_normal(int depth, CBoard cboard, int col, Val alpha, Val beta, bool pass=0);
 int random_choice(CBoard board, int col);
 int think_choice(CBoard board, int col);
 
 extern SearchStat searchstat;
+extern std::ostringstream debugout;
 #endif
