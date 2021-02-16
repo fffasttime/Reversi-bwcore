@@ -4,6 +4,10 @@
 #include <algorithm>
 #include <sstream>
 #include <iomanip>
+#include <setjmp.h>
+#include <chrono>
+#include <thread>
+#include <mutex>
 
 SearchStat searchstat;
 std::string SearchStat::str(){
@@ -39,7 +43,7 @@ Val search_end2(CBoard cboard, int col){
     int p1=ctz(emptys); emptys=blsr(emptys);
     int p2=ctz(emptys);
     Board board=cboard;
-    int v1=-INF, v2=-INF;
+    int v1=-INF, v2;
     if (board.makemove(p1, col)){
         if (board.makemove(p2, !col) || board.makemove(p2, col)) v1=board.cnt(col)*2;
         else v1=board.cnt(col)*2+1;
@@ -52,6 +56,7 @@ Val search_end2(CBoard cboard, int col){
     }
     if (likely(v1!=-INF)) return v1-64;
     //pass
+    v1=INF;
     if (board.makemove(p1, !col)){
         if (board.makemove(p2, col) || board.makemove(p2, !col)) v1=board.cnt(col)*2;
         else v1=board.cnt(col)*2+1;
@@ -114,7 +119,10 @@ Val search_normal1(int depth, CBoard cboard, int col, Val alpha, Val beta, bool 
     return val;
 }
 int hash_hitc;
+bool btimeout, btimeless;
+jmp_buf jtimeout_exit;
 Val search_normal(int depth, CBoard cboard, int col, Val alpha, Val beta, bool pass){
+    if (unlikely(btimeout)) longjmp(jtimeout_exit, 1);
 #ifdef DEBUGTREE
     DEBUGTREE_WARPPER_BEGIN
 #endif
@@ -125,6 +133,7 @@ Val search_normal(int depth, CBoard cboard, int col, Val alpha, Val beta, bool p
     }
     int remain=popcnt(cboard.emptys());
     if (remain==6) return search_end<6>(cboard, col, alpha, beta, 0);
+
     if (depth==1)
         return search_normal1(1, cboard, col, alpha, beta);
     int firstp=ctz(move); //by default
@@ -238,7 +247,9 @@ void search_exact_root(CBoard cboard, int col, Val delta){
     debugout<<searchstat.str()<<'\n';
 }
 
-int search_root(int depth, CBoard cboard, int col, Val delta, int suggestp=-1){
+float search_delta=0;
+
+int search_root(int depth, CBoard cboard, int col, int suggestp=-1){
 #ifdef DEBUGTREE
     if (debug_tree)
         debug_tree->step_in(__func__,depth, cboard, col, -INF, INF);
@@ -253,22 +264,23 @@ int search_root(int depth, CBoard cboard, int col, Val delta, int suggestp=-1){
     Val alpha=-INF;
     if (suggestp!=-1){
         btr(move, suggestp);
-        alpha = -search_normal(depth-1, cboard.makemove_r(suggestp, col), !col, -INF, -alpha+delta+0.01, 0);
+        alpha = -search_normal(depth-1, cboard.makemove_r(suggestp, col), 
+            !col, -INF, -alpha+search_delta+0.01, 0);
         result.emplace_back(suggestp, alpha);
     }
     for (auto p:u64iter(move)){
         Board board=cboard.makemove_r(p, col);
         Val ret;
-        ret=-search_normal(depth-1, board, !col, -INF, -alpha+delta+0.01, 0);
+        ret=-search_normal(depth-1, board, !col, -INF, -alpha+search_delta+0.01, 0);
         if (ret>alpha) alpha=ret, suggestp=p;
-        if (ret>=alpha-delta) result.emplace_back(p, ret);
+        if (ret>=alpha-search_delta) result.emplace_back(p, ret);
     }
     debugout<<hash_hitc<<' ';
 #ifdef DEBUGTREE
     if (debug_tree) debug_tree->step_out(alpha);
 #endif
     result.erase(
-    std::remove_if(result.begin(),result.end(),[&](const auto &x){return x.second<alpha-delta;}),
+    std::remove_if(result.begin(),result.end(),[&](const auto &x){return x.second<alpha-search_delta;}),
         result.end());
     searchstat.timing();
     searchstat.pv.clear(); 
@@ -276,18 +288,45 @@ int search_root(int depth, CBoard cboard, int col, Val delta, int suggestp=-1){
     return suggestp;
 }
 
+void search_id(CBoard board, int col, int maxd){
+    if (setjmp(jtimeout_exit)) return;
+    int p=-1;
+    for (int depth=4;depth<=maxd;depth++){
+        p = search_root(depth, board, col, p);
+        debugout<<searchstat.str()<<'\n';
+        if (btimeless) return;
+    }
+}
+
 int think_choice(CBoard board, int col){
     debugout.str("");
-    if (popcnt(board.emptys())<=10){
+    if (popcnt(board.emptys())<=12)
         search_exact_root(board, col, 0);
-        debugout<<searchstat.str()<<'\n';
-    }
+    else
+        search_id(board, col, 8);
+    return searchstat.pv[rand()%searchstat.pv.size()].first;
+}
+
+int think_choice_td(CBoard board, int col){
+    search_delta=0.75;
+    debugout.str("");
+    if (popcnt(board.emptys())<=12)
+        search_exact_root(board, col, 0);
     else{
-        int p=-1;
-        for (int depth=4;depth<=8;depth++){
-            p = search_root(depth, board, col, 0, p);
-            debugout<<searchstat.str()<<'\n';
-        }
+        btimeless=btimeout=false;
+        std::timed_mutex tmux;
+        clock_t t0=clock();
+        std::thread thd([&]{
+            tmux.lock();
+            search_id(board, col, popcnt(board.emptys()));
+            tmux.unlock();
+        });
+        std::this_thread::sleep_for(std::chrono::milliseconds(330));
+        btimeless=true;
+        if (tmux.try_lock_for(std::chrono::milliseconds(580))) tmux.unlock();
+        btimeout=true;
+        thd.join();
+        debugout<<"final tl:"<<clock()-t0<<'\n';
     }
     return searchstat.pv[rand()%searchstat.pv.size()].first;
 }

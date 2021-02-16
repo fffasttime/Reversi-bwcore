@@ -157,7 +157,7 @@ void gamePlay(){
 			if (gamemode[game.col] == 0) 
 				sp = random_choice(game.board, game.col);
 			else
-				sp = think_choice(game.board, game.col);
+				sp = think_choice_td(game.board, game.col);
 			logprintf("%s", debugout.str().c_str());
 			// logprintf("%s\n", searchstat.str().c_str());
 			Sleep(1);

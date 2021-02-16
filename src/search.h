@@ -58,6 +58,7 @@ Val search_normal(int depth, CBoard cboard, int col, Val alpha, Val beta, bool p
 Val search_exact(int depth, CBoard cboard, int col, Val alpha, Val beta, bool pass=0);
 int random_choice(CBoard board, int col);
 int think_choice(CBoard board, int col);
+int think_choice_td(CBoard board, int col);
 
 extern SearchStat searchstat;
 extern std::ostringstream debugout;

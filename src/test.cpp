@@ -152,6 +152,7 @@ int runTests(){
     cout<<search_normal(4, board, PBLACK, -INF, INF)<<std::endl;
 
     CHECK(search_end<4>(Board(0x3160756b5d257f01,0xa9e8a94a2da80fe), PBLACK, -INF, INF, false)==-6);
+    CHECK(search_exact(6, Board(0xff120c0d9fbfcdfc,0x6d737260403000),PBLACK, -INF, INF)==18);
 
     CHECK(think_choice(Board(0x3160752b1d051f01,0xa9e8ad4e2fa20fe), PBLACK)==58);
 
