@@ -4,4 +4,4 @@
 *.log
 /.vscode
 /data/*
-/src/*.html
+debugtree.html

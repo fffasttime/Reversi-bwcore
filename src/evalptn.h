@@ -8,5 +8,5 @@ int pow3to4(int len, int x);
 void readShort(FILE *stream, short &tar);
 void initPtnConfig();
 void loadPtnData();
-int evalPtn(const Board &board, int col);
+int evalPtn(const Board &board);
 #endif //ONLINE

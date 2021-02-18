@@ -65,15 +65,14 @@ void loadPtnData(){
     fclose(in);
 }
 
-int evalPtn(const Board &board, int col){
+int evalPtn(const Board &board){
     int empty_cnt = popcnt(board.emptys());
     const CoeffPack &p=pdata[Eval_PrTable[empty_cnt]];
 
     Board b_id=board;
-    if (col) b_id.cswap();
 
     int score=p.wb; //constant
-    int cmob = popcnt(b_id.genmove(0));
+    int cmob = popcnt(b_id.genmove());
     int codd = empty_cnt%2;
     score += p.wodd*codd;
     score += p.wmob*cmob;

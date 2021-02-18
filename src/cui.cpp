@@ -86,8 +86,8 @@ void iPrint(){
 	inc(i,BSIZE){
 		printf("¨U");
 		inc(j, BSIZE){
-			if (game[pos(i,j)] == PWHITE) printf("¡ð");
-			else if (game[pos(i,j)] == PBLACK) printf("¡ñ");
+			if (game[pos(i,j)] == !game.col) printf("¡ð");
+			else if (game[pos(i,j)] == game.col) printf("¡ñ");
 			else printf("  ");
 			printf("¨U");
 		}
@@ -155,11 +155,10 @@ void gamePlay(){
 		}
 		else{
 			if (gamemode[game.col] == 0) 
-				sp = random_choice(game.board, game.col);
+				sp = random_choice(game.board);
 			else
-				sp = think_choice_td(game.board, game.col);
+				sp = think_choice(game.board);
 			logprintf("%s", debugout.str().c_str());
-			// logprintf("%s\n", searchstat.str().c_str());
 			Sleep(1);
 		}
 		logprintf("m %d %d\n", sp/8, sp%8);

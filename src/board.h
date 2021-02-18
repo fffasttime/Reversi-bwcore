@@ -19,9 +19,9 @@ public:
 	bool operator==(const Board &v) const{return b[0]==v.b[0] && b[1]==v.b[1];}
 	std::string repr() const;
 #ifndef ONLINE
-	std::string str() const;
+	std::string str(bool fcol=0) const;
 #endif
-	u64 genmove(int col) const{
+	template<int col=0> u64 genmove() const{
 		// This part of code is brought from Zebra & stdrick
 		cu64 b_cur = b[col], b_opp = b[!col];
 		u64 b_opp_inner = b_opp & 0x7E7E7E7E7E7E7E7Eu;
@@ -43,8 +43,8 @@ public:
 
 		return moves & ~(b_cur | b_opp);
 	}
-	bool testmove(int p, int col) const{return bget(genmove(col),p);}
-	bool makemove(int p, int col){
+	bool testmove(int p) const{return bget(genmove(),p);}
+	template<int col=0> bool makemove(int p){
 		using namespace bitptn;
 		u64 &b_cur = b[col]; u64 &b_opp = b[!col];
 		u64 b_flip, b_opp_adj, flips = 0;
@@ -64,14 +64,14 @@ public:
 		if(flips) b_cur^=flips, b_opp^=flips, bts(b_cur, p);
 		return flips;
 	}
-	Board makemove_r(int p, int col) const{
-		Board r=*this;
-		r.makemove(p, col);
-		return r;
-	}
-	int cnt(int col) const{return popcnt(b[col]);}
+	bool cmakemove(int p){cswap();return makemove<1>(p);}
+	Board makemove_r(int p) const{Board r=*this;r.makemove(p);return r;}
+	Board cmakemove_r(int p) const{Board r(b[1],b[0]);r.makemove<1>(p);return r;}
+	int cnt0() const{return popcnt(b[0]);}
+	int cnt1() const{return popcnt(b[1]);}
 	u64 hash() const{return (b[0]*19260817)^b[1];}
 
+	Board cswap_r() const{return Board(b[1],b[0]);}
 	void cswap(){std::swap(b[0],b[1]);}
 	void flip_h(){::flip_h(b[0]);::flip_h(b[1]);}
 	void flip_v(){::flip_v(b[0]);::flip_v(b[1]);}
@@ -95,16 +95,16 @@ public:
 	int col_before[60];
 	int step,col;
 	Game(){ step=col=0; board.setStart(); }
-	bool testmove(int p){return p>=0 && p<64 && board.testmove(p, col);}
+	bool testmove(int p){return p>=0 && p<64 && board.testmove(p);}
 	void makemove(int p, bool autopass=1){
 		assertprintf(p>=0 && p<64, "invalid move at %d\n", p);
-		assertprintf(board.testmove(p, col),"invalid move at %d\n", p);
+		assertprintf(board.testmove(p),"invalid move at %d\n", p);
 		assertprintf(step<60, "invalid makemove steps");
 		col_before[step]=col;
 		board_before[step]=board;
 		step++;
-		board.makemove(p, col);
-		col=!col; if (autopass && !hasmove()) col=!col;
+		board.cmakemove(p); col=!col; 
+		if (autopass && !hasmove()) col=!col, board.cswap();
 	}
 	void unmakemove(){
 		assertprintf(step>=0, "unmakemove outbound\n");
@@ -117,14 +117,14 @@ public:
 		board.setStart();
 	}
 	bool isend(){return !hasmove();}
-	int cnt(int col) const{return board.cnt(col);}
+	int cnt(int _col) const{return popcnt(board.b[col^_col]);}
 	int winner() const{
 		if (cnt(PBLACK)>cnt(PWHITE)) return PBLACK;
 		else if (cnt(PBLACK)<cnt(PWHITE)) return PWHITE;
 		return 2;
 	}
-	u64 genmove() const{return board.genmove(col);}
-	bool hasmove() const{return popcnt(board.genmove(col));}
+	u64 genmove() const{return board.genmove();}
+	bool hasmove() const{return popcnt(board.genmove());}
 	
 	int operator[](int p) const{
 		assertprintf(p>=0 && p<64, "invalid pos call at [%d]\n", p); 

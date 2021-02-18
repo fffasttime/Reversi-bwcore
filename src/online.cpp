@@ -30,15 +30,15 @@ int main(){
     int n,x,y; scanf("%d", &n); // skip
     for(n=0;;n++){
         scanf("%d%d", &x, &y);
-        if (x!=-1) game.makemove(pos(x,y));
-        else if (n) game.col=!game.col;
+        if (x!=-1) game.makemove(pos(x,y), 0);
+        else if (n) game.col=!game.col, game.board.cswap();
         if (game.hasmove()){
-            int sp=think_choice_td(game.board, game.col);
+            int sp=think_choice_td(game.board);
             printf("%d %d\n", sp/8, sp%8);
             printf("%s, %s\n", game.repr().c_str(), searchstat.str().c_str());
             game.makemove(sp, 0);
         }
-        else puts("-1 -1"),puts("");
+        else puts("-1 -1"),puts(""), game.col=!game.col, game.board.cswap();
         //debug
         puts(""); // data
         puts(""); // global data
