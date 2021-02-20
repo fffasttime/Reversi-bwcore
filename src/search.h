@@ -62,4 +62,4 @@ int think_choice_td(CBoard board);
 
 extern SearchStat searchstat;
 extern std::ostringstream debugout;
-#endif
+#endif //ONLINE

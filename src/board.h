@@ -20,7 +20,7 @@ public:
 	std::string repr() const;
 #ifndef ONLINE
 	std::string str(bool fcol=0) const;
-#endif
+#endif //ONLINE
 	template<int col=0> u64 genmove() const{
 		// This part of code is brought from Zebra & stdrick
 		cu64 b_cur = b[col], b_opp = b[!col];
@@ -88,7 +88,7 @@ class Game{
 public:
 #ifndef ONLINE
 	std::string str();
-#endif
+#endif //ONLINE
 	std::string repr();
 	Board board;
 	Board board_before[60];

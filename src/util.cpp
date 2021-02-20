@@ -22,4 +22,4 @@ void showMask(u64 x){
 		for(int j=0;j<8;j++)
 			putchar((x>>(i*8+j)&1)?'*':'.');
 }
-#endif
+#endif //ONLINE

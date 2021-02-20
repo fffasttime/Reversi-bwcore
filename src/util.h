@@ -78,7 +78,7 @@ inline void rotate_l(u64 &x){
 }
 #ifndef ONLINE
 void showMask(u64 x);
-#endif
+#endif //ONLINE
 struct u64iter{
 	u64 x;
     u64iter(u64 x):x(x){}
