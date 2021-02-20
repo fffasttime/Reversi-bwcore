@@ -3,8 +3,8 @@ import time
 
 verbose=False
 
-def debugprint(str):
-    if verbose:
+def debugprint(str, always=False):
+    if verbose or always:
         if type(str)==bytes:
             str=str.decode()
         print(str.strip())
@@ -27,7 +27,7 @@ def runGame(cmd_bot1, cmd_bot2, cmd_judger):
             debugprint(s_judge_data)
             if (s_judge_cmd.strip()==b'finish'):
                 winner=s_judge_data
-                debugprint(p_judge.stdout.readline()) # reason
+                debugprint(p_judge.stdout.readline(), True) # reason
                 break
             
             # bot run
@@ -54,7 +54,7 @@ def runGame(cmd_bot1, cmd_bot2, cmd_judger):
             debugprint(s_judge_data)
             if (s_judge_cmd.strip()==b'finish'):
                 winner=s_judge_data
-                debugprint(p_judge.stdout.readline()) # reason
+                debugprint(p_judge.stdout.readline(), True) # reason
                 break
 
             # bot run
@@ -84,7 +84,7 @@ def runGame(cmd_bot1, cmd_bot2, cmd_judger):
 
 def runTests():
     bot1="botzone.exe"
-    bot2="botzone.exe"
+    bot2="bwcore_online1.4.exe"
     judger="judger.exe"
     n_game=50
 
@@ -105,7 +105,7 @@ def runTests():
         elif winner==2: draw_white+=1
     loss_white=n_game-win_white-draw_white
     
-    with open("result.log", "w+") as f:
+    with open("match.log", "w+") as f:
         f.write(f"Match finished at {time.ctime(time.time())}\n")
         f.write(f"bot1:{bot1} bot2:{bot2}\n")
         f.write("bot1 | win | loss | draw | score\n")

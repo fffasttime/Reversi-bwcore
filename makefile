@@ -28,6 +28,9 @@ util.o:
 
 VPATH = src
 
+bwcore14:
+	g++ -O2 tools/bwcore_online1.4.cpp -o bwcore_online1.4.exe
+
 .PHONY: botzone
 botzone:
 	python tools/merge.py

@@ -316,7 +316,7 @@ int think_choice(CBoard board){
 }
 
 int think_choice_td(CBoard board){
-    search_delta=0.75;
+    search_delta=1.0;
     debugout.str("");
     if (popcnt(board.emptys())<=12)
         search_exact_root(board, 0);
