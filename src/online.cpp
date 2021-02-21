@@ -4,13 +4,11 @@
 #include "time.h"
 #include <stdio.h>
 
-void global_init(){
+int main(){
+    srand(time(nullptr));
     initPtnConfig();
     loadPtnData();
-}
-int main(){
-    global_init();
-    srand(time(nullptr));
+    loadPCData();
     Game game;
 #if 0
     int n,x,y; scanf("%d", &n);
@@ -35,7 +33,8 @@ int main(){
         if (game.hasmove()){
             int sp=think_choice_td(game.board);
             printf("%d %d\n", sp/8, sp%8);
-            printf("%s, %s\n", game.repr().c_str(), searchstat.str().c_str());
+            printf("%s, %s, st:%d, scnt: %d\n", game.repr().c_str(), searchstat.str().c_str(),
+                searchstat_sum.tl, searchstat_sum.leafcnt);
             game.makemove(sp, 0);
         }
         else puts("-1 -1"),puts(""), game.col=!game.col, game.board.cswap();

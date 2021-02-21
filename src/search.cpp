@@ -8,8 +8,10 @@
 #include <chrono>
 #include <thread>
 #include <mutex>
+#include <fstream>
+#include <cstring>
 
-SearchStat searchstat;
+SearchStat searchstat, searchstat_sum;
 std::string SearchStat::str(){
     std::ostringstream o;
     o<<"dep:"<<depth;
@@ -129,6 +131,45 @@ Val search_normal1(int depth, CBoard cboard, Val alpha, Val beta, bool pass=0){
     }
     return val;
 }
+
+struct PC_Param{
+    Val w, b, sigma;
+}pc_param[64][MPC_MAXD+1];
+constexpr int pc_depth[MPC_MAXD+1]={0,0,0,1,2,1,2,3,4,5,6,5,6,5,6};
+void loadPCData(){
+    std::ifstream fin("data/pc_coeff.txt");
+    inc(i,64) inc(j,MPC_MAXD+1){
+        PC_Param &pa=pc_param[i][j];
+        fin>>pa.w>>pa.b>>pa.sigma;
+    }
+}
+#ifdef GENDATA_PC
+std::ofstream pc_data("data/pc_data.txt", std::ios::app);
+int pc_statecnt[64][15];
+#endif
+
+Val probcut(int depth, CBoard cboard, Val alpha, Val beta){
+    int cnt=popcnt(cboard.occupys());
+#ifdef GENDATA_PC
+    pc_statecnt[cnt][depth]++;
+    if (pc_statecnt[cnt][depth]>3 && rand()%(pc_statecnt[cnt][depth]-3)) return (alpha+beta)/2;
+    Val ret=search_normal(pc_depth[depth], cboard, -INF, INF);
+    pc_data<<cboard.repr()<<' '<<ret<<' '<<pc_depth[depth]<<' '<<depth<<' '<<cnt<<'\n';
+#else
+    PC_Param &pa=pc_param[cnt][depth];
+    if (pa.sigma>50) return (alpha+beta)/2; // no data
+    const Val t=2;
+    Val bound,ret;
+    bound=(t*pa.sigma+beta-pa.b)/pa.w;
+    ret=search_normal(pc_depth[depth],cboard, bound-0.01, bound);
+    if (ret>=bound) return beta;
+    bound=(-t*pa.sigma+alpha-pa.b)/pa.w;
+    ret=search_normal(pc_depth[depth],cboard, bound, bound+0.01);
+    if (ret<bound) return alpha;
+#endif //GENDATA_PC
+    return (alpha+beta)/2;
+}
+
 int hash_hitc;
 bool btimeout, btimeless;
 jmp_buf jtimeout_exit;
@@ -162,6 +203,11 @@ Val search_normal(int depth, CBoard cboard, Val alpha, Val beta, bool pass){
         }
     }
 #endif
+    // probcut
+    if (depth>=3 && depth<=MPC_MAXD){
+        Val val=probcut(depth, cboard, alpha, beta);
+        if (val>=beta || val<=alpha) return val;
+    }
     // presearch
     if (depth>3){
         auto t_move=move;
@@ -257,7 +303,7 @@ void search_exact_root(CBoard cboard, Val delta){
     debugout<<searchstat.str()<<'\n';
 }
 
-float search_delta=0;
+float search_delta=1.0;
 
 int search_root(int depth, CBoard cboard, int suggestp){
 #ifdef DEBUGTREE
@@ -290,6 +336,7 @@ int search_root(int depth, CBoard cboard, int suggestp){
     result.erase(
     std::remove_if(result.begin(),result.end(),[&](const auto &x){return x.second<alpha-search_delta;}),
         result.end());
+    searchstat.maxv=alpha;
     searchstat.timing();
     searchstat.pv.clear(); 
     searchstat.pv.assign(result.begin(), result.end());
@@ -297,26 +344,39 @@ int search_root(int depth, CBoard cboard, int suggestp){
 }
 
 void search_id(CBoard board, int maxd){
-    if (setjmp(jtimeout_exit)) return;
+    if (setjmp(jtimeout_exit)){
+        searchstat_sum.timing();
+        searchstat_sum.leafcnt+=searchstat.leafcnt;
+        return;
+    }
+    searchstat_sum.timing(); searchstat_sum.leafcnt=0;
     int p=-1;
     for (int depth=4;depth<=maxd;depth++){
         p = search_root(depth, board, p);
         debugout<<searchstat.str()<<'\n';
+        searchstat_sum.leafcnt+=searchstat.leafcnt;
         if (btimeless) return;
     }
 }
 
+#ifndef ONLINE
+int think_maxd=8;
 int think_choice(CBoard board){
+    #ifdef GENDATA_PC
+    memset(pc_statecnt,0, sizeof(pc_statecnt));
+    #endif
     debugout.str("");
     if (popcnt(board.emptys())<=12)
         search_exact_root(board, 0);
     else
-        search_id(board, 8);
+        search_id(board, think_maxd);
     return searchstat.pv[rand()%searchstat.pv.size()].first;
 }
+#endif //ONLINE
+
+int think_checktime=330, think_maxtime=580;
 
 int think_choice_td(CBoard board){
-    search_delta=1.0;
     debugout.str("");
     if (popcnt(board.emptys())<=12)
         search_exact_root(board, 0);
@@ -329,9 +389,9 @@ int think_choice_td(CBoard board){
             search_id(board, popcnt(board.emptys()));
             tmux.unlock();
         });
-        std::this_thread::sleep_for(std::chrono::milliseconds(330));
+        std::this_thread::sleep_for(std::chrono::milliseconds(think_checktime));
         btimeless=true;
-        if (tmux.try_lock_for(std::chrono::milliseconds(580))) tmux.unlock();
+        if (tmux.try_lock_for(std::chrono::milliseconds(think_maxtime))) tmux.unlock();
         btimeout=true;
         thd.join();
         debugout<<"final tl:"<<clock()-t0<<'\n';

@@ -84,7 +84,7 @@ def runGame(cmd_bot1, cmd_bot2, cmd_judger):
 
 def runTests():
     bot1="botzone.exe"
-    bot2="bwcore_online1.4.exe"
+    bot2="bwcore_online1.5.exe"
     judger="judger.exe"
     n_game=50
 

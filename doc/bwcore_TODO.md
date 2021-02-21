@@ -93,6 +93,14 @@ bwcore1.5(strongbwcore)仍然使用较传统的搜索算法。主要为快速终
 
 `seach_end<N>` 简单终局搜索，不用额外剪枝，建议6个左右空时使用
 
+### 概率剪枝
+
+同时可做概率剪枝。变量cnt, height。参数为pc_depth, slope, bias, sigma。
+
+概率剪枝会对上、下界做一次浅层的零窗搜索。
+
+> 数据生成：开gendata.cpp GENDATA_PC宏生成浅层搜索结果到pc_data.txt，再gendata.cpp remake()一次生成深层搜索结果pc_ndata.txt，然后执行回归。
+
 ## 测试程序
 
 `make test` 生成 `test.exe`

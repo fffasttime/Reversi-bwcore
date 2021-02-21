@@ -1,8 +1,8 @@
 ifdef release
-	CXXFLAGS = -std=c++17 -Wall -O2
+	CXXFLAGS = -std=c++17 -Wall -O2 $(def)
 	objects = util.o board.o evalptn.o search.o
 else
-	CXXFLAGS = -std=c++17 -g -Wall -DDEBUG
+	CXXFLAGS = -std=c++17 -g -Wall -DDEBUG $(def)
 	objects = util.o board.o evalptn.o search.o debugtree.o
 endif
 
@@ -14,6 +14,9 @@ online: $(objects)
 
 test: $(objects)
 	g++ $(CXXFLAGS) $(objects) src/test.cpp -o test.exe
+
+gendata: $(objects)
+	g++ $(CXXFLAGS) $(objects) src/gendata.cpp -o gendata.exe
 
 judger: util.o board.o
 	g++ $(CXXFLAGS) util.o board.o src/judger.cpp -o judger.exe

@@ -45,6 +45,7 @@ struct SearchStat{
     int depth, leafcnt;
     int t_start, tl; 
     std::vector<PosVal> pv;
+    Val maxv;
     void timing(){
         tl=clock()-t_start;
         t_start=clock();
@@ -54,12 +55,22 @@ struct SearchStat{
 
 int search_root(int depth, CBoard cboard, int suggestp=-1);
 Val search_normal(int depth, CBoard cboard, Val alpha, Val beta, bool pass=0);
+
+constexpr int MPC_MAXD=14;
+
 #ifndef ONLINE
 Val search_exact(int depth, CBoard cboard, Val alpha, Val beta, bool pass=0);
 int random_choice(CBoard board);
 int think_choice(CBoard board);
 int think_choice_td(CBoard board);
+void loadPCData();
 
 extern SearchStat searchstat;
+extern SearchStat searchstat_sum;
 extern std::ostringstream debugout;
+
+extern Val search_delta;
+extern int think_maxd; //think_choice() maxd midgame
+extern int think_checktime, think_maxtime;
+
 #endif //ONLINE
