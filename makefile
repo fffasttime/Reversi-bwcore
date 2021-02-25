@@ -1,9 +1,9 @@
-ifdef release
-	CXXFLAGS = -std=c++17 -Wall -O2 $(def)
-	objects = util.o board.o evalptn.o search.o
-else
+ifdef debug
 	CXXFLAGS = -std=c++17 -g -Wall -DDEBUG $(def)
 	objects = util.o board.o evalptn.o search.o debugtree.o
+else
+	CXXFLAGS = -std=c++17 -Wall -O2 $(def)
+	objects = util.o board.o evalptn.o search.o
 endif
 
 all: $(objects) cui.o
@@ -20,6 +20,9 @@ gendata: $(objects)
 
 judger: util.o board.o
 	g++ $(CXXFLAGS) util.o board.o src/judger.cpp -o judger.exe
+
+linreg: util.o board.o evalptn.o
+	g++ $(CXXFLAGS) util.o board.o evalptn.o src/linreg.cpp -o linreg.exe
 
 $(objects): util.h
 cui.o: board.h search.h evalptn.h

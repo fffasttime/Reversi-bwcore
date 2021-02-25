@@ -158,7 +158,7 @@ Val probcut(int depth, CBoard cboard, Val alpha, Val beta){
 #else
     PC_Param &pa=pc_param[cnt][depth];
     if (pa.sigma>50) return (alpha+beta)/2; // no data
-    const Val t=2;
+    const Val t=1.2;
     Val bound,ret;
     bound=(t*pa.sigma+beta-pa.b)/pa.w;
     ret=search_normal(pc_depth[depth],cboard, bound-0.01, bound);
@@ -203,11 +203,12 @@ Val search_normal(int depth, CBoard cboard, Val alpha, Val beta, bool pass){
         }
     }
 #endif
-    // probcut
+#ifdef UES_PC
     if (depth>=3 && depth<=MPC_MAXD){
         Val val=probcut(depth, cboard, alpha, beta);
         if (val>=beta || val<=alpha) return val;
     }
+#endif
     // presearch
     if (depth>3){
         auto t_move=move;
@@ -272,10 +273,8 @@ int random_choice(CBoard board){
 
 std::ostringstream debugout;
 
-void search_exact_root(CBoard cboard, Val delta){
-    searchstat.leafcnt=0;
-    searchstat.timing();
-    searchstat.depth=popcnt(cboard.emptys());
+void search_exact_root(CBoard cboard){
+    searchstat.reset(popcnt(cboard.emptys()));
 #ifdef DEBUGTREE
     if (debug_tree)
         debug_tree->step_in(__func__,searchstat.depth, cboard, -INF, INF);
@@ -286,19 +285,18 @@ void search_exact_root(CBoard cboard, Val delta){
     Val alpha=-INF;
     for (auto p:u64iter(move)){
         Board board=cboard.cmakemove_r(p);
-        Val ret;
-        ret=-search_exact(searchstat.depth-1, board, -INF, -alpha+delta+0.01, 0);
+        Val ret=-search_exact(searchstat.depth-1, board, -INF, -alpha+search_delta+0.01, 0);
         alpha=max(alpha, ret);
-        if (ret>=alpha-delta) result.emplace_back(p, ret);
+        if (ret>=alpha-search_delta) result.emplace_back(p, ret);
     }
 #ifdef DEBUGTREE
     if (debug_tree) debug_tree->step_out(alpha);
 #endif
-    result.erase(
-    std::remove_if(result.begin(),result.end(),[&](const auto &x){return x.second<alpha-delta;}),
+    result.erase(std::remove_if(result.begin(),result.end(),
+        [&](const auto &x){return x.second<alpha-search_delta;}),
         result.end());
     searchstat.timing();
-    searchstat.pv.clear(); 
+    searchstat.maxv=alpha;
     searchstat.pv.assign(result.begin(), result.end());
     debugout<<searchstat.str()<<'\n';
 }
@@ -311,17 +309,14 @@ int search_root(int depth, CBoard cboard, int suggestp){
         debug_tree->step_in(__func__,depth, cboard, -INF, INF);
 #endif
     hash_hitc=0;
-    searchstat.leafcnt=0;
-    searchstat.timing();
-    searchstat.depth=depth;
+    searchstat.reset(depth);
     u64 move=cboard.genmove();
     assertprintf(move, "nowhere to play\n");
     std::vector<PosVal> result;
     Val alpha=-INF;
     if (suggestp!=-1){
         btr(move, suggestp);
-        alpha = -search_normal(depth-1, cboard.cmakemove_r(suggestp), 
-            -INF, -alpha+search_delta+0.01, 0);
+        alpha = -search_normal(depth-1, cboard.cmakemove_r(suggestp), -INF, -alpha+search_delta+0.01, 0);
         result.emplace_back(suggestp, alpha);
     }
     for (auto p:u64iter(move)){
@@ -338,7 +333,6 @@ int search_root(int depth, CBoard cboard, int suggestp){
         result.end());
     searchstat.maxv=alpha;
     searchstat.timing();
-    searchstat.pv.clear(); 
     searchstat.pv.assign(result.begin(), result.end());
     return suggestp;
 }
@@ -367,7 +361,7 @@ int think_choice(CBoard board){
     #endif
     debugout.str("");
     if (popcnt(board.emptys())<=12)
-        search_exact_root(board, 0);
+        search_exact_root(board);
     else
         search_id(board, think_maxd);
     return searchstat.pv[rand()%searchstat.pv.size()].first;
@@ -379,7 +373,7 @@ int think_checktime=330, think_maxtime=580;
 int think_choice_td(CBoard board){
     debugout.str("");
     if (popcnt(board.emptys())<=12)
-        search_exact_root(board, 0);
+        search_exact_root(board);
     else{
         btimeless=btimeout=false;
         std::timed_mutex tmux;

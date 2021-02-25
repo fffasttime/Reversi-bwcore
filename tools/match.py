@@ -84,7 +84,7 @@ def runGame(cmd_bot1, cmd_bot2, cmd_judger):
 
 def runTests():
     bot1="botzone.exe"
-    bot2="bwcore_online1.5.exe"
+    bot2="bwcore_online1.4.exe"
     judger="judger.exe"
     n_game=50
 
@@ -105,7 +105,7 @@ def runTests():
         elif winner==2: draw_white+=1
     loss_white=n_game-win_white-draw_white
     
-    with open("match.log", "w+") as f:
+    with open("match.log", "a") as f:
         f.write(f"Match finished at {time.ctime(time.time())}\n")
         f.write(f"bot1:{bot1} bot2:{bot2}\n")
         f.write("bot1 | win | loss | draw | score\n")
