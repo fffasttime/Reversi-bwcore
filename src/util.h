@@ -121,5 +121,6 @@ constexpr auto make_array(Function f)
     CEXPR_ARRAY_DEF(d2, 15, x>7?0x0102040810204080u<<((x-7)*8):0x0102040810204080u>>((7-x)*8));
 #undef CEXPR_ARRAY_DEF
 
-constexpr u64 edge2x=0x42ff, c33=0x70707, c52=0x1f1f;
+constexpr u64 edge2x=0x42ff, c33=0x70707, c52=0x1f1f, ccor=0x8100000000000081,
+cx22=0x0042000000004200, pedge=0x7e8181818181817e, pinner=0x003c7e7e7e7e3c00;
 }
