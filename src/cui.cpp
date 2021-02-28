@@ -156,6 +156,8 @@ void gamePlay(){
 		else{
 			if (gamemode[game.col] == 0) 
 				sp = random_choice(game.board);
+			else if (gamemode[game.col] == 1)
+				sp = think_choice(game.board);
 			else
 				sp = think_choice_td(game.board);
 			logprintf("%s", debugout.str().c_str());
@@ -208,9 +210,9 @@ void writeSelect(int col){
 			gotoXY({32,11}); printf("黑色：电脑");
 			switch(gamemode[PBLACK]){
 				case 0:printf("(随机)"); break;
-				case 1:printf("(测试)"); break;
-				case 2:printf("(测试)"); break;
-				case 3:printf("(测试)"); break;
+				case 1:printf("(深度)"); break;
+				case 2:printf("(时限)"); break;
+				case 3:printf("(时限)"); break;
 			}
 		}
 	}
@@ -221,9 +223,9 @@ void writeSelect(int col){
 			gotoXY({32,12}); printf("白色：电脑");
 			switch(gamemode[PWHITE]){
 				case 0:printf("(随机)"); break;
-				case 1:printf("(测试)"); break;
-				case 2:printf("(测试)"); break;
-				case 3:printf("(测试)"); break;
+				case 1:printf("(深度)"); break;
+				case 2:printf("(时限)"); break;
+				case 3:printf("(时限)"); break;
 			}
 		}
 	}
@@ -242,8 +244,8 @@ int splashScreen(){
 	gotoXY({32,8}); printf("黑白棋   1.3");
 	gotoXY({36,10}); printf(">>开始<<");
 	gotoXY({34,13}); printf("关于    退出");
-	gamemode[0]=-1; writeSelect(PBLACK);
-	gamemode[1]=-1; writeSelect(PWHITE);
+	gamemode[0]=1; writeSelect(PBLACK);
+	gamemode[1]=1; writeSelect(PWHITE);
 	gotoXY({0,0});
 	while (1){
 		Ploc p;

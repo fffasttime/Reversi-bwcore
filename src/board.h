@@ -87,21 +87,24 @@ typedef const Board &CBoard;
 class Game{
 public:
 #ifndef ONLINE
-	std::string str();
+	std::string str() const;
+	void savesgf(std::string filename);
+	Board& board_begin(){return step?board_before[0]:board;}
 #endif //ONLINE
-	std::string repr();
+	std::string repr() const;
 	Board board;
 	Board board_before[60];
-	int col_before[60];
+	int col_before[60], move_before[60];
 	int step,col;
 	Game(){ step=col=0; board.setStart(); }
 	bool testmove(int p){return p>=0 && p<64 && board.testmove(p);}
 	void makemove(int p, bool autopass=1){
 		assertprintf(p>=0 && p<64, "invalid move at %d\n", p);
 		assertprintf(board.testmove(p),"invalid move at %d\n", p);
-		assertprintf(step<60, "invalid makemove steps");
+		assertprintf(step<60, "makemove unbelievably outbound\n");
 		col_before[step]=col;
 		board_before[step]=board;
+		move_before[step]=p;
 		step++;
 		board.cmakemove(p); col=!col; 
 		if (autopass && !hasmove()) col=!col, board.cswap();

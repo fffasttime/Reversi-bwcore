@@ -1,3 +1,9 @@
+PYTHON3 = python
+
+ifdef def
+	def = -D$(def)
+endif
+
 ifdef debug
 	CXXFLAGS = -std=c++17 -g -Wall -DDEBUG $(def)
 	objects = util.o board.o evalptn.o search.o debugtree.o
@@ -6,23 +12,29 @@ else
 	objects = util.o board.o evalptn.o search.o
 endif
 
+ifndef o
+	output = $@.exe
+else
+	output = $(o).exe
+endif
+
 all: $(objects) cui.o
-	g++ $(CXXFLAGS) $(objects) cui.o src/main.cpp -o bwcore1.5.exe
+	$(CXX) $(CXXFLAGS) $(objects) cui.o src/main.cpp -o bwcore1.5.exe
 
 online: $(objects)
-	g++ $(CXXFLAGS) $(objects) src/online.cpp -o bwcore_online1.5.exe
+	$(CXX) $(CXXFLAGS) $(objects) src/online.cpp -o $(output)
 
 test: $(objects)
-	g++ $(CXXFLAGS) $(objects) src/test.cpp -o test.exe
+	$(CXX) $(CXXFLAGS) $(objects) src/test.cpp -o $(output)
 
 gendata: $(objects)
-	g++ $(CXXFLAGS) $(objects) src/gendata.cpp -o gendata.exe
+	$(CXX) $(CXXFLAGS) $(objects) src/gendata.cpp -o $(output)
 
 judger: util.o board.o
-	g++ $(CXXFLAGS) util.o board.o src/judger.cpp -o judger.exe
+	$(CXX) $(CXXFLAGS) util.o board.o src/judger.cpp -o $(output)
 
 linreg: util.o board.o evalptn.o
-	g++ $(CXXFLAGS) util.o board.o evalptn.o src/linreg.cpp -o linreg.exe
+	$(CXX) $(CXXFLAGS) util.o board.o evalptn.o src/linreg.cpp -o $(output)
 
 $(objects): util.h
 cui.o: board.h search.h evalptn.h
@@ -35,13 +47,13 @@ util.o:
 VPATH = src
 
 bwcore14:
-	g++ -O2 tools/bwcore_online1.4.cpp -o bwcore_online1.4.exe
+	$(CXX) -O2 tools/bwcore_online1.4.cpp -o bwcore_online1.4.exe
 
 .PHONY: botzone
 botzone:
-	python tools/merge.py
-	g++ $(CXXFLAGS) data/botzone.cpp -o botzone.exe
+	$(PYTHON3) tools/merge.py
+	$(CXX) $(CXXFLAGS) data/botzone.cpp -o botzone.exe
 
 .PHONY: clean
 clean: 
-	rm -f *.exe *.o debugtree.html
+	$(RM) *.o bwcore1.5.exe online.exe test.exe gendata.exe judger.exe linreg.exe debugtree.html

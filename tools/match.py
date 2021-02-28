@@ -1,5 +1,6 @@
 from subprocess import Popen, PIPE
 import time
+import argparse
 
 verbose=False
 
@@ -82,12 +83,7 @@ def runGame(cmd_bot1, cmd_bot2, cmd_judger):
         p_bot1.kill()
         p_bot2.kill()
 
-def runTests():
-    bot1="botzone.exe"
-    bot2="bwcore_online1.4.exe"
-    judger="judger.exe"
-    n_game=50
-
+def runTests(bot1, bot2, judger, n_game):
     win_black, draw_black = 0, 0
     win_white, draw_white = 0, 0
 
@@ -117,4 +113,13 @@ def runTests():
         f.write('\n')
 
 if __name__ == '__main__':
-    runTests()
+    parser=argparse.ArgumentParser()
+    parser.add_argument('bot1',default='botzone.exe')
+    parser.add_argument('bot2',default='botzone.exe')
+    parser.add_argument('n_game', default=50, help='games play each side')
+    parser.add_argument('-j', '--judger', default='judger.exe')
+    parser.add_argument('-v', '--verbose', action='store_true', help='show communication')
+    args=parser.parse_args()
+    if (args.verbose):
+        verbose=True
+    runTests(args.bot1, args.bot2, args.judger, args.n_game)

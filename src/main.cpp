@@ -15,7 +15,6 @@ int main(){
     srand(0);
     global_init();
     search_delta=0.5;
-    think_maxd=11;
     runConsole();
     return 0;
 }

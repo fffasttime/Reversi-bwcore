@@ -447,7 +447,6 @@ void analyze(){
 }
 
 void train_op(){
-    //phase=4;
     cout<< "phase: "; cin>>phase;
     loadData();
     flog=fopen((string("data/")+folder+"/trainlog.log").c_str(),"a");
@@ -479,7 +478,10 @@ wb|wodd|wmob|wcdege|wedgeodd|wcinner(65)|e1|c52|c33|e2|e3|e4|k8|k7|k6|k5|k4|ccor
     for (auto x:plen) if (x<=10) datapack_len+=pow3[x]; else datapack_len+=x;
     cout<<"datapack len: "<<datapack_len<<'\n';
 
-    int merge_begin=1, merge_end=4;
+    int merge_begin, merge_end;
+    cout<<"merge_begin(default 1): "; cin>>merge_begin;
+    cout<<"merge_end(default 10): "; cin>>merge_end;
+
     FILE *in[11], *out;
     for (int i=merge_begin; i<=merge_end;i++){
         string filename=string("data/")+folder+"/coeff"+
@@ -528,11 +530,17 @@ wb|wodd|wmob|wcdege|wedgeodd|wcinner(65)|e1|c52|c33|e2|e3|e4|k8|k7|k6|k5|k4|ccor
 	fclose(out);
 }
 
-int main(){
-    folder="rawdata1";
-    //cout<< "folder: "; cin>>folder;
+int main(int argc, char **argv){
     initPtnConfig();
-    train_op();
-    // mergedata();
+    if (argc==1){
+        folder="rawdata1";
+        train_op();
+    }
+    else if (argc==2){
+        if (string(argv[1])=="merge")
+            mergedata();
+        else
+            folder=argv[1];
+    }
     return 0;
 }

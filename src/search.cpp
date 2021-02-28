@@ -28,7 +28,7 @@ std::string SearchStat::str(){
 }
 
 struct TranslationTableNode{
-    u64 hash;
+    Board board;
     u8 pv, depth;
     //0 nothing, 1:upper bound, 2:lower bound, 3:pv
     u8 type;
@@ -170,11 +170,12 @@ Val probcut(int depth, CBoard cboard, Val alpha, Val beta){
     return (alpha+beta)/2;
 }
 
+#define ENDSEARCH_BEGIN 6
+
 int hash_hitc;
 bool btimeout, btimeless;
-jmp_buf jtimeout_exit;
 Val search_normal(int depth, CBoard cboard, Val alpha, Val beta, bool pass){
-    if (unlikely(btimeout)) longjmp(jtimeout_exit, 1);
+    if (unlikely(btimeout)) return 0;
 #ifdef DEBUGTREE
     DEBUGTREE_WARPPER_BEGIN
 #endif
@@ -184,17 +185,16 @@ Val search_normal(int depth, CBoard cboard, Val alpha, Val beta, bool pass){
         return -search_normal(depth, cboard.cswap_r(), -beta, -alpha, 1);
     }
     int remain=popcnt(cboard.emptys());
-    if (remain==6) return search_end<6>(cboard, alpha, beta, 0);
+    if (remain==ENDSEARCH_BEGIN) return search_end<ENDSEARCH_BEGIN>(cboard, alpha, beta, 0);
 
     if (depth==1)
         return search_normal1(1, cboard, alpha, beta);
     int firstp=ctz(move); //by default
 #if 1
-    bool hash_hit = false;
     auto ttnode=translation_table + cboard.hash()%(1<<20);
-    if (ttnode->hash==cboard.hash()){
+    if (ttnode->board==cboard){
         firstp = ttnode->pv;
-        hash_hit = true;
+        assertprintf(move>>firstp&1, "invalid hash pv %d", firstp);
         hash_hitc++;
         if (ttnode->depth==depth){
             Val val=ttnode->val;
@@ -203,7 +203,7 @@ Val search_normal(int depth, CBoard cboard, Val alpha, Val beta, bool pass){
         }
     }
 #endif
-#ifdef UES_PC
+#ifdef USE_PC
     if (depth>=3 && depth<=MPC_MAXD){
         Val val=probcut(depth, cboard, alpha, beta);
         if (val>=beta || val<=alpha) return val;
@@ -216,17 +216,15 @@ Val search_normal(int depth, CBoard cboard, Val alpha, Val beta, bool pass){
         Val t_alpha;
         if (depth>5) t_alpha=-search_normal(depth-4, cboard.cmakemove_r(firstp), -INF, INF);
         else t_alpha=-search_normal1(depth-4, cboard.cmakemove_r(firstp), -INF, INF);
-        for (auto p:u64iter(move)){
+        for (auto p:u64iter(t_move)){
             Val ret;
             if (depth>5) ret=-search_normal(depth-4, cboard.cmakemove_r(p), -INF, -t_alpha);
             else ret=-search_normal1(depth-4, cboard.cmakemove_r(p), -INF, -t_alpha);
-            if (ret>t_alpha){
-                t_alpha=ret;
-                firstp=p;
-            }
+            if (ret>t_alpha) t_alpha=ret, firstp=p;
         }
     }
     int pv = firstp;
+    assertprintf(move>>firstp&1, "invalid pv %d", firstp);
     btr(move, firstp);
     Val val=-search_normal(depth-1, cboard.cmakemove_r(firstp), -beta, -alpha);
     if (val>alpha){
@@ -237,7 +235,7 @@ Val search_normal(int depth, CBoard cboard, Val alpha, Val beta, bool pass){
         Board board=cboard.cmakemove_r(p);
         Val ret=-search_normal(depth-1, board, -alpha-0.01, -alpha); // zwsearch
         if (ret>alpha+0.005 && ret<beta){
-            ret=-search_normal(depth-1, board, -beta, -alpha);
+            ret=-search_normal(depth-1, board, -beta, -ret);
             if (ret>alpha) alpha=ret;
         }
         if (ret>val){
@@ -245,12 +243,14 @@ Val search_normal(int depth, CBoard cboard, Val alpha, Val beta, bool pass){
             if (val>=beta) goto BETA_CUT;
         }
     }
+    if (unlikely(btimeout)) return 0;
 BETA_CUT:
 #if 1
-    if (!hash_hit){ //hash update
-        ttnode->hash=cboard.hash();
+    if (!(ttnode->board==cboard)){ //hash update
+        ttnode->board=cboard;
         ttnode->depth=depth;
     }
+    assertprintf(cboard.genmove()>>pv&1, "invalid hash insert pv %d", pv);
     ttnode->pv=pv;
     ttnode->val=val;
     if (val<=alpha) ttnode->type=1;
@@ -324,6 +324,7 @@ int search_root(int depth, CBoard cboard, int suggestp){
         if (ret>alpha) alpha=ret, suggestp=p;
         if (ret>=alpha-search_delta) result.emplace_back(p, ret);
     }
+    if (btimeout) return 0;
     debugout<<hash_hitc<<' ';
 #ifdef DEBUGTREE
     if (debug_tree) debug_tree->step_out(alpha);
@@ -334,23 +335,22 @@ int search_root(int depth, CBoard cboard, int suggestp){
     searchstat.maxv=alpha;
     searchstat.timing();
     searchstat.pv.assign(result.begin(), result.end());
+    debugout<<searchstat.str()<<'\n';
     return suggestp;
 }
 
 void search_id(CBoard board, int maxd){
-    if (setjmp(jtimeout_exit)){
-        searchstat_sum.timing();
-        searchstat_sum.leafcnt+=searchstat.leafcnt;
-        return;
-    }
     searchstat_sum.timing(); searchstat_sum.leafcnt=0;
     int p=-1;
+    maxd=std::min(maxd, popcnt(board.emptys())-ENDSEARCH_BEGIN+1);
     for (int depth=4;depth<=maxd;depth++){
         p = search_root(depth, board, p);
-        debugout<<searchstat.str()<<'\n';
+        if (btimeless) break;
         searchstat_sum.leafcnt+=searchstat.leafcnt;
-        if (btimeless) return;
     }
+    searchstat_sum.timing();
+    searchstat_sum.leafcnt+=searchstat.leafcnt;
+    debugout<<"st:"<<searchstat_sum.tl<<"  sc:"<<searchstat_sum.leafcnt<<'\n';
 }
 
 #ifndef ONLINE
@@ -363,7 +363,8 @@ int think_choice(CBoard board){
     if (popcnt(board.emptys())<=12)
         search_exact_root(board);
     else
-        search_id(board, think_maxd);
+        search_id(board, think_maxd); // id is faster at mostly time
+        //search_root(think_maxd, board, -1);
     return searchstat.pv[rand()%searchstat.pv.size()].first;
 }
 #endif //ONLINE

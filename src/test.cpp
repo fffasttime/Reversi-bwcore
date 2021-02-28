@@ -242,7 +242,8 @@ void runDebugMode(){
             }
         }
         else if (cmd=="cnt" || cmd=="count"){
-            printf("B:%2d  W:%2d\n", game.cnt(0), game.cnt(1));
+            printf("B:%2d W:%2d E:%2d\n", 
+                game.cnt(0), game.cnt(1), 64-game.cnt(0)-game.cnt(1));
         }
         else if (cmd=="ld" || cmd=="board"){
             u64 x, y;
@@ -281,8 +282,15 @@ void runDebugMode(){
             game.col=!game.col;
             printf("now col: %d\n",game.col);
         }
+        else if (cmd=="savesgf"){
+            std::string filename; std::cin>>filename;
+            game.savesgf(filename+".sgf");
+        }
         else if (cmd=="col"){
             std::cin>>game.col;
+        }
+        else if (cmd=="deep"){
+            std::cin>>think_maxd;
         }
         else if (cmd=="reset"){
             game.reset();

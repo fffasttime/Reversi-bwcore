@@ -50,7 +50,7 @@ struct SearchStat{
         tl=clock()-t_start;
         t_start=clock();
     }
-    void reset(int _depth){leafcnt=0; depth=_depth; t_start=clock(); pv.clear(); maxv=-INF;}
+    void reset(int _depth){leafcnt=0; depth=_depth; t_start=clock(); maxv=-INF;}
     std::string str();
 };
 

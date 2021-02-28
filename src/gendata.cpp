@@ -48,19 +48,11 @@ void remakedata_PC(){
     }
 }
 
-void gendata_endgame(){
-    std::string foldername="data/rawdata1/";
-    const int p_begins[] = {2,5, 8,11,14,18,22,27,32,38,44};
-    const int p_ends[]   = {4,7,10,13,17,21,26,31,37,43,60};
-    const int phase=4;
+const int p_begins[] = {2,5, 8,11,14,18,22,27,32,38,44};
+const int p_ends[]   = {4,7,10,13,17,21,26,31,37,43,60};
+void gendata_endgame(ofstream &fout, int phase, int game_cnt){
     int p_begin=p_begins[phase];
     int p_end=p_ends[phase];
-    ofstream fout(foldername+"data"+std::to_string(p_begin)+"_"+std::to_string(p_end)+".txt", std::ios::app);
-    if (!fout.is_open()){
-        puts("file doesn't exist");
-        exit(1);
-    }
-    int game_cnt=100000;
     for (int i=0;i<game_cnt;i++) {
         Game game;
         while (!game.isend()){
@@ -86,14 +78,68 @@ void gendata_endgame(){
     }
 }
 
+void gendata_midgame(ofstream &fout, int phase, int game_cnt){
+    int p_begin=p_begins[phase];
+    int p_end=p_ends[phase];
+    for (int i=0;i<game_cnt;i++) {
+        Game game;
+        while (!game.isend()){
+            int remain=popcnt(game.board.emptys());
+            if (remain>=p_begin && remain<=p_end && i%(p_end-p_begin+1)+p_begin==remain){
+                search_delta=0.15;
+                think_maxd=9;
+                Board bcur=game.board; int bccol=game.col;
+                while (popcnt(game.board.emptys())>16){
+                    int mv=think_choice(game.board);
+                    game.makemove(mv);
+                }
+                search_delta=0;
+                think_maxd=12;
+                think_choice(game.board);
+                int val=searchstat.maxv;
+                if (game.col!=bccol) val=-val;
+                fout<<bcur.repr()<<' '<<val<<'\n';
+                fout.flush();
+                break;
+            }
+            think_maxd=5;
+            search_delta=5+game.step/2;
+            // [0, n//20] all stronger
+            // [n//20, n//10] one side stronger
+            if (i<game_cnt/10 && game.col==i%2) search_delta/=4;
+            if (i<game_cnt/20 && game.col+1==i%2) search_delta/=4;
+            game.makemove(think_choice(game.board));
+        }
+        if (i%10==0) std::cout<<i<<' ';
+    }
+}
+
+void gendata(){
+    std::string foldername="data/rawdata1/";
+    int phase;
+    cout<<"phase: "; cin>>phase;
+    int p_begin=p_begins[phase];
+    int p_end=p_ends[phase];
+    ofstream fout(foldername+"data"+std::to_string(p_begin)+"_"+std::to_string(p_end)+".txt", std::ios::app);
+    if (!fout.is_open()){
+        puts("file doesn't exist");
+        exit(1);
+    }
+    int game_cnt=100000;
+    if (phase<5) gendata_endgame(fout, phase, game_cnt);
+    else gendata_midgame(fout, phase, game_cnt);
+}
+
 int main(){
     srand(time(0));
     initPtnConfig();
     loadPtnData();
 
-    //gendata_PC();
-    //remakedata_PC();
-    gendata_endgame();
-
+#ifdef GENDATA_PC
+    gendata_PC();
+    remakedata_PC();
+#else
+    gendata();
+#endif
     return 0;
 }
