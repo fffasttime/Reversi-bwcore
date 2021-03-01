@@ -286,6 +286,9 @@ void runDebugMode(){
             std::string filename; std::cin>>filename;
             game.savesgf(filename+".sgf");
         }
+        else if (cmd=="delta"){
+            std::cin>>search_delta;
+        }
         else if (cmd=="col"){
             std::cin>>game.col;
         }

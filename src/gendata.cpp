@@ -49,7 +49,7 @@ void remakedata_PC(){
 }
 
 const int p_begins[] = {2,5, 8,11,14,18,22,27,32,38,44};
-const int p_ends[]   = {4,7,10,13,17,21,26,31,37,43,60};
+const int p_ends[]   = {4,7,10,13,17,21,26,31,37,43,50};
 void gendata_endgame(ofstream &fout, int phase, int game_cnt){
     int p_begin=p_begins[phase];
     int p_end=p_ends[phase];
@@ -66,7 +66,7 @@ void gendata_endgame(ofstream &fout, int phase, int game_cnt){
                 fout.flush();
                 break;
             }
-            think_maxd=5;
+            think_maxd=5; 
             search_delta=5+game.step/2;
             // [0, n//20] all stronger
             // [n//20, n//10] one side stronger
@@ -88,19 +88,22 @@ void gendata_midgame(ofstream &fout, int phase, int game_cnt){
             if (remain>=p_begin && remain<=p_end && i%(p_end-p_begin+1)+p_begin==remain){
                 search_delta=0.15;
                 think_maxd=9;
+                if (phase>5) think_maxd=8;
                 Board bcur=game.board; int bccol=game.col;
+                int val;
                 while (popcnt(game.board.emptys())>16){
                     int mv=think_choice(game.board);
                     game.makemove(mv);
+                    if (!game.hasmove()) goto fail;
                 }
                 search_delta=0;
                 think_maxd=12;
                 think_choice(game.board);
-                int val=searchstat.maxv;
+                val=searchstat.maxv;
                 if (game.col!=bccol) val=-val;
                 fout<<bcur.repr()<<' '<<val<<'\n';
                 fout.flush();
-                break;
+                fail: break;
             }
             think_maxd=5;
             search_delta=5+game.step/2;
@@ -116,8 +119,9 @@ void gendata_midgame(ofstream &fout, int phase, int game_cnt){
 
 void gendata(){
     std::string foldername="data/rawdata1/";
-    int phase;
+    int phase, game_cnt;
     cout<<"phase: "; cin>>phase;
+    cout<<"game_cnt: "; cin>>game_cnt;
     int p_begin=p_begins[phase];
     int p_end=p_ends[phase];
     ofstream fout(foldername+"data"+std::to_string(p_begin)+"_"+std::to_string(p_end)+".txt", std::ios::app);
@@ -125,7 +129,6 @@ void gendata(){
         puts("file doesn't exist");
         exit(1);
     }
-    int game_cnt=100000;
     if (phase<5) gendata_endgame(fout, phase, game_cnt);
     else gendata_midgame(fout, phase, game_cnt);
 }

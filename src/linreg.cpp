@@ -27,7 +27,7 @@ struct CoeffPack{
         wb, wodd, wmob, wcinner[65], wcedge, wedgeodd, ccor[1<<8], cx22[1<<8];
 }ptn, ptngrad;
 const int p_begins[] = {2,5, 8,11,14,18,22,27,32,38,44};
-const int p_ends[]   = {4,7,10,13,17,21,26,31,37,43,60};
+const int p_ends[]   = {4,7,10,13,17,21,26,31,37,43,50};
 
 void writePtnData(){
     FILE *out=fopen((string("data/")+folder+"/coeff"+std::to_string(p_begins[phase])
@@ -329,7 +329,7 @@ void train(){
     int batch_size=512;
     int train_id=0;
     double lr;
-    const int train_steps=30000;
+    const int train_steps=50000;
     const int lr_decay_st=20000;
     const double lr_max=0.2, lr_min=0.05;
     fprintf(flog, "batch=%d lr_decay_st=%d lr_max=%f lr_min=%f\n", train_steps, lr_decay_st, lr_max, lr_min);

@@ -243,8 +243,8 @@ Val search_normal(int depth, CBoard cboard, Val alpha, Val beta, bool pass){
             if (val>=beta) goto BETA_CUT;
         }
     }
-    if (unlikely(btimeout)) return 0;
 BETA_CUT:
+    if (unlikely(btimeout)) return 0;
 #if 1
     if (!(ttnode->board==cboard)){ //hash update
         ttnode->board=cboard;
@@ -354,7 +354,7 @@ void search_id(CBoard board, int maxd){
 }
 
 #ifndef ONLINE
-int think_maxd=8;
+int think_maxd=11;
 int think_choice(CBoard board){
     #ifdef GENDATA_PC
     memset(pc_statecnt,0, sizeof(pc_statecnt));
@@ -378,7 +378,6 @@ int think_choice_td(CBoard board){
     else{
         btimeless=btimeout=false;
         std::timed_mutex tmux;
-        clock_t t0=clock();
         std::thread thd([&]{
             tmux.lock();
             search_id(board, popcnt(board.emptys()));
@@ -389,7 +388,6 @@ int think_choice_td(CBoard board){
         if (tmux.try_lock_for(std::chrono::milliseconds(think_maxtime))) tmux.unlock();
         btimeout=true;
         thd.join();
-        debugout<<"final tl:"<<clock()-t0<<'\n';
     }
     return searchstat.pv[rand()%searchstat.pv.size()].first;
 }
