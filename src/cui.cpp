@@ -132,15 +132,16 @@ void showCanDo(){
 void gameEnd(){
 	gotoXY({0,0});
 	iPrint();
-	printf("B:%2d  W:%2d\n", game.cnt(PBLACK), game.cnt(PWHITE));
+	gotoXY({0, 17});
+	printf(" B:%2d  W:%2d  ", game.cnt(PBLACK), game.cnt(PWHITE));
 	if (game.winner()==PWHITE)
-		printf(" White Win"), logprintf("white win\n");
+		printf(" White Win"), logprintf("white win!  \n");
 	else if (game.winner()==PBLACK)
-		printf(" Black Win"), logprintf("black win\n");
+		printf(" Black Win"), logprintf("black win!  \n");
 	else
-		printf(" Draw!"), logprintf("draw\n");
+		printf(" Draw!"), logprintf("game draw...   \n");
 	gotoXY({0,20});
-	printf("[·µ»Ø]");
+	printf(" [·µ»Ø]");
 	while (1){
 		Ploc p=getCurClick();
 		if (p.x==20 && p.y<8) break;
@@ -177,10 +178,12 @@ void gamePlay(){
 				sp = think_choice(game.board);
 			else
 				sp = think_choice_td(game.board);
+			gotoXY({0,18}); inc(i,winsize.X) putchar(' '); 
+			gotoXY({1,18}); printf(searchstat.str().c_str());
 			logprintf("%s", debugout.str().c_str());
 			
 		}
-		if (gamemode[0]>=0 || gamemode[1]>=0){
+		if (gamemode[0]<0 || gamemode[1]<0){
 			gotoXY(PlocToMloc(sp));
 			if (game.col == PWHITE) printf("¡ð");
 			else if (game.col == PBLACK) printf("¡ñ");

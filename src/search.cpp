@@ -147,7 +147,7 @@ void loadPCData(){
 std::ofstream pc_data("data/pc_data.txt", std::ios::app);
 int pc_statecnt[64][15];
 #endif
-
+// #define USE_PC
 Val probcut(int depth, CBoard cboard, Val alpha, Val beta){
     int cnt=popcnt(cboard.occupys());
 #ifdef GENDATA_PC
@@ -158,7 +158,7 @@ Val probcut(int depth, CBoard cboard, Val alpha, Val beta){
 #else
     PC_Param &pa=pc_param[cnt][depth];
     if (pa.sigma>50) return (alpha+beta)/2; // no data
-    const Val t=1.2;
+    const Val t=1.4;
     Val bound,ret;
     bound=(t*pa.sigma+beta-pa.b)/pa.w;
     ret=search_normal(pc_depth[depth],cboard, bound-0.01, bound);
@@ -272,6 +272,7 @@ int random_choice(CBoard board){
 }
 
 std::ostringstream debugout;
+float search_delta=1.0;
 
 void search_exact_root(CBoard cboard){
     searchstat.reset(popcnt(cboard.emptys()));
@@ -301,8 +302,6 @@ void search_exact_root(CBoard cboard){
     debugout<<searchstat.str()<<'\n';
 }
 
-float search_delta=1.0;
-
 int search_root(int depth, CBoard cboard, int suggestp){
 #ifdef DEBUGTREE
     if (debug_tree)
@@ -325,7 +324,6 @@ int search_root(int depth, CBoard cboard, int suggestp){
         if (ret>=alpha-search_delta) result.emplace_back(p, ret);
     }
     if (btimeout) return 0;
-    debugout<<hash_hitc<<' ';
 #ifdef DEBUGTREE
     if (debug_tree) debug_tree->step_out(alpha);
 #endif
@@ -335,7 +333,7 @@ int search_root(int depth, CBoard cboard, int suggestp){
     searchstat.maxv=alpha;
     searchstat.timing();
     searchstat.pv.assign(result.begin(), result.end());
-    debugout<<searchstat.str()<<'\n';
+    debugout<<hash_hitc<<' '<<searchstat.str()<<'\n';
     return suggestp;
 }
 

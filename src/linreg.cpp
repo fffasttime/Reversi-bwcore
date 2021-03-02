@@ -331,7 +331,8 @@ void train(){
     double lr;
     const int train_steps=50000;
     const int lr_decay_st=20000;
-    const double lr_max=0.2, lr_min=0.05;
+    double lr_max=0.2, lr_min=0.03;
+    cout<<"lr_max(default 0.2): "; cin>>lr_max;
     fprintf(flog, "batch=%d lr_decay_st=%d lr_max=%f lr_min=%f\n", train_steps, lr_decay_st, lr_max, lr_min);
     inc(i, train_steps){
         if (i<1000) lr=lr_min; //warming up
@@ -474,6 +475,8 @@ void mergedata(){
 wb|wodd|wmob|wcdege|wedgeodd|wcinner(65)|e1|c52|c33|e2|e3|e4|k8|k7|k6|k5|k4|ccor|cx22\n";
     const short plen[]=
     {0,0,0,0,0,65,10,10,9,8,8,8,8,7,6,5,4,4,4};
+    cout<<"folder: "; cin>>folder;
+
     int datapack_len=0;
     for (auto x:plen) if (x<=10) datapack_len+=pow3[x]; else datapack_len+=x;
     cout<<"datapack len: "<<datapack_len<<'\n';

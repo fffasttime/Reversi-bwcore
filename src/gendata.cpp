@@ -117,11 +117,21 @@ void gendata_midgame(ofstream &fout, int phase, int game_cnt){
     }
 }
 
-void gendata(){
-    std::string foldername="data/rawdata1/";
+void gendata(int argc, char **argv){
+    std::string foldername;
     int phase, game_cnt;
-    cout<<"phase: "; cin>>phase;
-    cout<<"game_cnt: "; cin>>game_cnt;
+    if (argc==4){
+        foldername=argv[1];
+        phase=atoi(argv[2]);
+        foldername=atoi(argv[3]);
+    }
+    else{
+        cout<<"Command line usage: gendate.exe <folder> <phase(0-10)> <game_cnt>\n";
+        cout<<"folder: "; cin>>foldername;
+        cout<<"phase: "; cin>>phase;
+        cout<<"game_cnt: "; cin>>game_cnt;
+    }
+    foldername=std::string("data/")+foldername+"/";
     int p_begin=p_begins[phase];
     int p_end=p_ends[phase];
     ofstream fout(foldername+"data"+std::to_string(p_begin)+"_"+std::to_string(p_end)+".txt", std::ios::app);
@@ -133,7 +143,7 @@ void gendata(){
     else gendata_midgame(fout, phase, game_cnt);
 }
 
-int main(){
+int main(int argc, char **argv){
     srand(time(0));
     initPtnConfig();
     loadPtnData();
@@ -142,7 +152,7 @@ int main(){
     gendata_PC();
     remakedata_PC();
 #else
-    gendata();
+    gendata(argc, argv);
 #endif
     return 0;
 }

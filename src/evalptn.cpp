@@ -2,7 +2,7 @@
 #include "evalptn.h"
 #include <iostream>
 
-#define EVAL_FILE "data/reversicoeff.bin"
+#define EVAL_FILE "data/rawdata1/reversicoeff.bin"
 
 constexpr int Eval_PrTable[61]={-1,-1,0,0,0,1,1,1,2,2,2,3,3,3,4,4,4,4,5,5,5,5,6,6,6,6,6,7,7,7,7,7,8,8,8,8,8,8,9,9,9,9,9,9,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10};
 
@@ -11,7 +11,7 @@ unsigned short pow4to3_10[1<<20], pow4to3_9[1<<18];
 struct CoeffPack{
     short e1[pow3[10]], c52[pow3[10]], c33[pow3[9]], //by pow4to3
         e2[1<<16], e3[1<<16], e4[1<<16], k8[1<<16], k7[1<<14], k6[1<<12], k5[1<<10], k4[1<<8], //directly
-        wb, wodd, wmob;
+        wb, wodd, wmob, wcinner[65], wcedge, wedgeodd, ccor[1<<8], cx22[1<<8];
 }pdata[12];
 
 void readShort(FILE *stream, short &tar){fread(&tar, 2, 1, stream);}
@@ -40,11 +40,14 @@ void loadPtnData(){
     short _; inc(i, type_cnt)  readShort(in, _);
     short checksum=0;
     auto rdc=[&](short &x){readShort(in, x); checksum^=x;};
-    inc(i,part_cnt){
+    for (int i=1;i<1+part_cnt;i++){
         CoeffPack &p=pdata[i];
         rdc(p.wb);
         rdc(p.wodd);
         rdc(p.wmob);
+        rdc(p.wcedge);
+        rdc(p.wedgeodd);
+        inc(j,65) rdc(p.wcinner[j]);
         inc(j,pow3[10]) rdc(p.e1[j]);
         inc(j,pow3[10]) rdc(p.c52[j]);
         inc(j,pow3[9])  rdc(p.c33[j]);
@@ -56,6 +59,8 @@ void loadPtnData(){
         inc(j,pow3[6])  rdc(p.k6[pow3to4(6,j)]);
         inc(j,pow3[5])  rdc(p.k5[pow3to4(5,j)]);
         inc(j,pow3[4])  rdc(p.k4[pow3to4(4,j)]);
+        inc(j,pow3[4])  rdc(p.ccor[pow3to4(4,j)]);
+        inc(j,pow3[4])  rdc(p.cx22[pow3to4(4,j)]);
     }
     short file_checksum; readShort(in, file_checksum);
     assertprintf(checksum==file_checksum, "pattern file checksum failed\n");
@@ -63,6 +68,7 @@ void loadPtnData(){
 }
 
 int evalPtn(const Board &board){
+    using namespace bitptn;
     int empty_cnt = popcnt(board.emptys());
     const CoeffPack &p=pdata[Eval_PrTable[empty_cnt]];
 
@@ -73,10 +79,12 @@ int evalPtn(const Board &board){
     int codd = empty_cnt%2;
     score += p.wodd*codd;
     score += p.wmob*cmob;
+    score += p.wcinner[popcnt(b_id.b[0]&pinner)-popcnt(b_id.b[1]&pinner)+32];
+    int cedge=popcnt(b_id.b[0]&pedge)-popcnt(b_id.b[1]&pedge);
+    score += p.wcedge*cedge;
+    score += p.wedgeodd*(cedge%2);
 
-    using namespace bitptn;
     u64 x;
- 
     #define OP_EXT(brd, mask, len)\
     x=(pext(brd.b[0], mask)<<len) + pext(brd.b[1], mask);
     #define S(expr) score+=p.expr
@@ -110,6 +118,9 @@ int evalPtn(const Board &board){
     OP_EXT(b_id, d2[3], 4) S(k4[x]);
     OP_EXT(b_id, d1[11], 4) S(k4[x]);
     OP_EXT(b_id, d2[11], 4) S(k4[x]);
+
+    OP_EXT(b_id, ccor, 4) S(ccor[x]);
+    OP_EXT(b_id, cx22, 4) S(cx22[x]);
     
     OP_EXT(b_id, edge2x, 10) S(e1[pow4to3_10[x]]);
     OP_EXT(b_id, c33, 9) S(c33[pow4to3_9[x]]);
