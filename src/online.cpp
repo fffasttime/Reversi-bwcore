@@ -4,27 +4,45 @@
 #include "time.h"
 #include <stdio.h>
 
-void global_init(){
+int main(){
+    srand(time(nullptr));
     initPtnConfig();
     loadPtnData();
-}
-int main(){
-    global_init();
+    loadPCData();
     Game game;
+#ifdef RUN_BY_STEP
     int n,x,y; scanf("%d", &n);
     inc(i,2*n-1){
         scanf("%d%d",&x,&y); 
-        if (x!=-1) game.makemove(pos(x,y), 0);
-        else if (i) game.col=!game.col;
+        if (x!=-1) game.makemove(pos(x,y), 0); // no auto pass
+        else if (i) game.col=!game.col; // opp pass
     }
     if (game.hasmove()){
-        int sp=think_choice(game.board, game.col);
+        int sp=think_choice_td(game.board, game.col);
         printf("%d %d\n", sp/8, sp%8);
     }
     else puts("-1 -1");
-
     //debug
     printf("%s, %s\n", game.repr().c_str(), searchstat.str().c_str());
-
+#else
+    int n,x,y; scanf("%d", &n); // skip
+    for(n=0;;n++){
+        scanf("%d%d", &x, &y);
+        if (x!=-1) game.makemove(pos(x,y), 0);
+        else if (n) game.col=!game.col, game.board.cswap();
+        if (game.hasmove()){
+            int sp=think_choice_td(game.board);
+            printf("%d %d\n", sp/8, sp%8);
+            printf("%s, %s, st:%d, scnt: %d\n", game.repr().c_str(), searchstat.str().c_str(),
+                searchstat_sum.tl, searchstat_sum.leafcnt);
+            game.makemove(sp, 0);
+        }
+        else puts("-1 -1"),puts(""), game.col=!game.col, game.board.cswap();
+        //debug
+        puts("\n"); // data + global data
+        printf(">>>BOTZONE_REQUEST_KEEP_RUNNING<<<\n");
+        fflush(stdout);
+    }
+#endif //RUN_BY_STEP
     return 0;
 }

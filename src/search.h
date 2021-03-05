@@ -4,33 +4,34 @@
 #include "time.h"
 #include <algorithm>
 #include <vector>
+#include <sstream>
 using std::max;
 
 typedef float Val;
 constexpr int INF=256;
-typedef std::pair<int,Val> PosVal;
+typedef std::pair<int, Val> PosVal;
 
 #ifdef DEBUGTREE
     #include "debugtree.h"
 #endif
 
-Val search_end2(const Board &board, int col);
-inline Val eval_end(const Board &board, int col){return popcnt(board.b[col])-popcnt(board.b[!col]);}
+Val search_end2(CBoard board);
+inline Val eval_end(CBoard board){return board.cnt0()-popcnt(board.b[1]);}
 
 template<int depth>
-Val search_end(const Board &cboard, int col, Val alpha, Val beta, bool pass){
+Val search_end(CBoard cboard, Val alpha, Val beta, bool pass){
 #ifdef DEBUGTREE
     DEBUGTREE_WARPPER_BEGIN
 #endif
-    u64 move=cboard.genmove(col);
+    u64 move=cboard.genmove();
     if (!move){
-        if (pass) return eval_end(cboard, col); 
-        return -search_end<depth>(cboard, !col, -beta, -alpha, 1);
+        if (pass) return eval_end(cboard);
+        return -search_end<depth>(cboard.cswap_r(), -beta, -alpha, 1);
     }
     Val val=-INF;
     for (auto p:u64iter(move)){
-        Board board=cboard.makemove_r(p, col);
-        val=max(val, -search_end<depth-1>(board, !col, -beta, -alpha, 0));
+        if constexpr (depth==3) val=max(val, -search_end2(cboard.cmakemove_r(p)));
+        else val=max(val, -search_end<depth-1>(cboard.cmakemove_r(p), -beta, -alpha, 0));
         if (val>=beta) return val;
         if (val>alpha) alpha=val;
     }
@@ -44,19 +45,33 @@ struct SearchStat{
     int depth, leafcnt;
     int t_start, tl; 
     std::vector<PosVal> pv;
+    Val maxv;
     void timing(){
         tl=clock()-t_start;
         t_start=clock();
     }
+    void reset(int _depth){leafcnt=0; depth=_depth; t_start=clock(); maxv=-INF;}
     std::string str();
 };
 
+int search_root(int depth, CBoard cboard, int suggestp=-1);
+Val search_normal(int depth, CBoard cboard, Val alpha, Val beta, bool pass=0);
+
+constexpr int MPC_MAXD=14;
+
 #ifndef ONLINE
-template<> Val search_end<3>(const Board &cboard, int col, Val alpha, Val beta, bool pass);
-Val search_exact(int depth, const Board &cboard, int col, Val alpha, Val beta, bool pass=0);
-Val search_normal(int depth, const Board &cboard, int col, Val alpha, Val beta, bool pass=0);
-int random_choice(const Board &board, int col);
-int think_choice(const Board &board, int col);
+Val search_exact(int depth, CBoard cboard, Val alpha, Val beta, bool pass=0);
+int random_choice(CBoard board);
+int think_choice(CBoard board);
+int think_choice_td(CBoard board);
+void loadPCData();
 
 extern SearchStat searchstat;
-#endif
+extern SearchStat searchstat_sum;
+extern std::ostringstream debugout;
+
+extern Val search_delta;
+extern int think_maxd; //think_choice() maxd midgame
+extern int think_checktime, think_maxtime;
+
+#endif //ONLINE

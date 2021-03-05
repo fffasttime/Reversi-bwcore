@@ -52,47 +52,47 @@ int runTests(){
     Board board;
     board.setStart();
 
-    CHECK(popcnt(board.genmove(PBLACK)));
-    CHECK(board.testmove(pos(5,4), PBLACK));
+    CHECK(popcnt(board.genmove()));
+    CHECK(board.testmove(pos(5,4)));
 
-    auto testmoves=[&](Board &b, int col){
+    auto testmoves=[&](Board &b){
         u64 x=0;
         for (int i=0;i<64;i++) 
-            if (b.testmove(i, col)) 
+            if (b.testmove(i)) 
                 bts(x, i);
         return x;
     };
 
     inc(i,5){
-        TSCTEST(inc(j,10) board.testmove(j, PBLACK)); //optimized out! 
+        TSCTEST(inc(j,10) board.testmove(j)); //optimized out! 
     }
     inc(i,5){
-        TSCTEST(inc(j,10) board.makemove(44, PBLACK)); 
+        TSCTEST(inc(j,10) board.makemove(44)); 
     }
     inc(i,5){
-        TSCTEST(inc(j,10) x=board.genmove(PBLACK));
+        TSCTEST(inc(j,10) x=board.genmove());
     }
     Board b2; b2.b[0]=rand(); b2.b[1]=rand(); 
     inc(i,20){
         b2.b[0]+=231689789646623;b2.b[1]+=123456123656123; 
  		b2.b[1]^=b2.b[0]&b2.b[1];
-        TSCTEST(evalPtn(b2, 1));
+        TSCTEST(evalPtn(b2));
     }
     inc(i,5){
-        TSCTEST(inc(j,10) popcnt(board.genmove(PBLACK)));
+        TSCTEST(inc(j,10) popcnt(board.genmove()));
     }
-    CHECK(testmoves(board, PBLACK)==x);
-    CHECK(testmoves(board, PWHITE)==board.genmove(PWHITE));
+    CHECK(testmoves(board)==x);
+    //CHECK(testmoves(board, PWHITE)==board.genmove(PWHITE));
 
-    board.makemove(44, PBLACK);
-    CHECK(board.b[0]==0x101810000000);
-    CHECK(board.b[1]==0x8000000);
-    CHECK(board.genmove(PWHITE)==0x280020000000);
+    board.cmakemove(44);
+    CHECK(board.b[1]==0x101810000000);
+    CHECK(board.b[0]==0x8000000);
+    CHECK(board.genmove()==0x280020000000);
 
     Game game;
     game.makemove(pos(5,4));
     CHECK(game.board==board);
-    CHECK(board.genmove(PWHITE)==game.genmove());
+    CHECK(board.genmove()==game.genmove());
 
     //first game
     while (game.hasmove()){
@@ -110,6 +110,7 @@ int runTests(){
         game.makemove(firstmove);
         //CHECK(testmoves(game.board, game.col)==game.genmove());
     }
+    if (game.col) game.board.cswap();
     CHECK(game.board.b[0]==0x3fb0888090a0c080u &&
           game.board.b[1]==0xc04f777f6f5f3f7fu);
 
@@ -139,27 +140,28 @@ int runTests(){
     CHECK(x_l90==0x0000000303030303);
     CHECK(x_r90==0xc0c0c0c0c0000000);
 
-    board.b[0]=0x1f19156f4d112100; board.b[1]=0xa0e6ea90b2eede9c;
+    board.b[1]=0x1f19156f4d112100; board.b[0]=0xa0e6ea90b2eede9c;
     
-    Board b1=board.makemove_r(pos(0,5),PWHITE);
-    b1.makemove(pos(0,0),PBLACK);
-    b1.makemove(pos(0,1),PWHITE);
-    CHECK(search_end2(b1,PBLACK)==16);
-    CHECK(search_end2(b1,PWHITE)==-16);
+    Board b1=board.cmakemove_r(pos(0,5));
+    b1.cmakemove(pos(0,0));
+    b1.cmakemove(pos(0,1));
+    CHECK(search_end2(b1)==16);
+    CHECK(search_end2(b1.cswap_r())==-16);
     CHECK(search_exact(5, board, 1, -INF, INF)==-16);
 
     board.setStart();
-    cout<<search_normal(4, board, PBLACK, -INF, INF)<<std::endl;
+    cout<<search_normal(4, board, -INF, INF)<<std::endl;
 
-    CHECK(search_end<4>(Board(0x3160756b5d257f01,0xa9e8a94a2da80fe), PBLACK, -INF, INF, false)==-6);
+    CHECK(search_end<4>(Board(0x3160756b5d257f01,0xa9e8a94a2da80fe), -INF, INF, false)==-6);
+    CHECK(search_exact(6, Board(0xff120c0d9fbfcdfc,0x6d737260403000), -INF, INF)==18);
 
-    CHECK(think_choice(Board(0x3160752b1d051f01,0xa9e8ad4e2fa20fe), PBLACK)==58);
+    CHECK(think_choice(Board(0x3160752b1d051f01,0xa9e8ad4e2fa20fe))==58);
 
 #ifdef DEBUGTREE
     board.b[0]=0x3160756b5d257f01;
     board.b[1]=0xa9e8a94a2da80fe;
     debug_tree=new DebugTree;
-    cout<<"log tree "<<search_end<4>(board, PBLACK, -INF, INF, false)<<'\n';
+    cout<<"log tree "<<search_end<4>(board, -INF, INF, false)<<'\n';
     debug_tree->write_html("debugtree.html", 6);
     delete debug_tree; debug_tree=nullptr;
 #endif 
@@ -171,6 +173,7 @@ int runTests(){
 void global_init(){
     initPtnConfig();
     loadPtnData();
+    loadPCData();
 }
 
 void runDebugMode(){
@@ -206,15 +209,16 @@ void runDebugMode(){
             printf("echo %s\n", echo?"on":"off");
         }
         else if (cmd=="evalptn"){
-            printf("evalptn: %f\n", evalPtn(game.board, game.col)/256.0);
+            printf("evalptn: %f\n", evalPtn(game.board)/256.0);
         }
         else if (cmd=="tree"){
         #ifdef DEBUGTREE
+            int deep; std::cin>>deep;
             debug_tree=new DebugTree;
             if (game.isend()) puts("no move");
             else{
-                int p=think_choice(game.board, game.col);
-                printf("%d %d\n", p/8, p%8);
+                search_root(deep, game.board, -1);
+                printf("%s\n",searchstat.str().c_str());
             }
             debug_tree->write_html("debugtree.html", 6);
             delete debug_tree; debug_tree=nullptr;
@@ -225,7 +229,7 @@ void runDebugMode(){
         else if (cmd=="think"){
             if (game.isend()) puts("no move");
             else{
-                int p=think_choice(game.board, game.col);
+                int p=think_choice(game.board);
                 printf("%d %d\n", p/8, p%8);
                 printf("%s\n",searchstat.str().c_str());
             }
@@ -233,13 +237,14 @@ void runDebugMode(){
         else if (cmd=="play"){
             if (game.isend()) puts("no move");
             else{
-                int p=think_choice(game.board, game.col);
+                int p=think_choice(game.board);
                 game.makemove(p);
                 if (echo) displayGame();
             }
         }
         else if (cmd=="cnt" || cmd=="count"){
-            printf("B:%2d  W:%2d\n", game.cnt(0), game.cnt(1));
+            printf("B:%2d W:%2d E:%2d\n", 
+                game.cnt(0), game.cnt(1), 64-game.cnt(0)-game.cnt(1));
         }
         else if (cmd=="ld" || cmd=="board"){
             u64 x, y;
@@ -278,8 +283,18 @@ void runDebugMode(){
             game.col=!game.col;
             printf("now col: %d\n",game.col);
         }
+        else if (cmd=="savesgf"){
+            std::string filename; std::cin>>filename;
+            game.savesgf(filename+".sgf");
+        }
+        else if (cmd=="delta"){
+            std::cin>>search_delta;
+        }
         else if (cmd=="col"){
             std::cin>>game.col;
+        }
+        else if (cmd=="deep"){
+            std::cin>>think_maxd;
         }
         else if (cmd=="reset"){
             game.reset();

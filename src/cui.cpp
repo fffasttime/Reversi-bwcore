@@ -7,6 +7,8 @@
 #include <cstdio>
 using namespace std;
 
+#define BSIZE 8
+
 extern HANDLE hOut, hIn;
 extern const COORD winsize;
 
@@ -54,7 +56,7 @@ void minit(){
 	for (int i = 0; i<winsize.Y; i++)
 		for (int j = 0; j<winsize.X; j++)
 			putchar(' ');
-	gotoXY({ 30,11 }); printf("黑白棋   1.3");
+	gotoXY({ 30,11 }); printf("黑白棋   1.5");
 	Sleep(100);
 }
 
@@ -81,26 +83,33 @@ Ploc getCurClick(){
 
 void iPrint(){
 	gotoXY({0,0});
-	printf("╔"); for (int i = 1; i < BSIZE; i++) printf("═╦"); printf("═╗\n");
+	printf("╔"); for (int i = 1; i < BSIZE; i++) printf("═╦"); 
+	printf("═╗\n");
 	inc(i,BSIZE){
 		printf("║");
 		inc(j, BSIZE){
-			if (game[pos(i,j)] == PWHITE) printf("○");
-			else if (game[pos(i,j)] == PBLACK) printf("●");
+			if (game[pos(i,j)] == !game.col) printf("○");
+			else if (game[pos(i,j)] == game.col) printf("●");
 			else printf("  ");
 			printf("║");
 		}
 		printf("\n");
 		if (i < BSIZE - 1){
-			printf("╠");
-			for (int j = 0; j < 7; j++) printf("═╬"); printf("═╣");
+			printf("╠"); for (int j = 0; j < 7; j++) printf("═╬"); 
+			printf("═╣");
 		}
 		else{
-			printf("╚");
-			for (int j = 0; j < 7; j++) printf("═╩"); printf("═╝");
+			printf("╚"); for (int j = 0; j < 7; j++) printf("═╩"); 
+			printf("═╝");
 		}
 		printf("\n");
 	}
+	gotoXY({0, 17});
+	printf(" B:%2d W:%2d ", game.cnt(PBLACK), game.cnt(PWHITE));
+	if (game.col == PWHITE) printf("current: White\n");
+	else printf("current: Black\n");
+	gotoXY({0,20});
+	printf(" [返回]    [撤销]");
 }
 
 Ploc PlocToMloc(const Ploc &p){
@@ -108,7 +117,11 @@ Ploc PlocToMloc(const Ploc &p){
 }
 Ploc MlocToPloc(const Ploc &p){
 	if (p.y >= 4 * BSIZE || p.x >= 2 * BSIZE ||
-		p.y % 4 == 0 || p.y % 4 == 1 || p.x % 2 == 0) return { -1,-1 };
+		p.y % 4 == 0 || p.y % 4 == 1 || p.x % 2 == 0){
+		if (p.x==20 && p.y>=1 && p.y<=6) return {-1, 0}; // exit
+		if (p.x==20 && p.y>=11 && p.y<=16) return {-1, 1}; // unmakemove
+		return { -1,-1 };
+	}
 	return { p.x / 2,p.y / 4 };
 }
 void showCanDo(){
@@ -121,15 +134,16 @@ void showCanDo(){
 void gameEnd(){
 	gotoXY({0,0});
 	iPrint();
-	printf("B:%2d  W:%2d\n", game.cnt(PBLACK), game.cnt(PWHITE));
+	gotoXY({0, 17});
+	printf(" B:%2d  W:%2d  ", game.cnt(PBLACK), game.cnt(PWHITE));
 	if (game.winner()==PWHITE)
-		printf(" White Win"), logprintf("white win\n");
+		printf(" White Win!  "), logprintf("white win\n");
 	else if (game.winner()==PBLACK)
-		printf(" Black Win"), logprintf("black win\n");
+		printf(" Black Win!  "), logprintf("black win\n");
 	else
-		printf(" Draw!"), logprintf("draw\n");
+		printf(" game draw..."), logprintf("game draw\n");
 	gotoXY({0,20});
-	printf("[返回]");
+	printf(" [返回]");
 	while (1){
 		Ploc p=getCurClick();
 		if (p.x==20 && p.y<8) break;
@@ -138,44 +152,62 @@ void gameEnd(){
 
 void gamePlay(){
 	while (!game.isend()){
-		printf("B:%2d  W:%2d\n", game.cnt(PBLACK), game.cnt(PWHITE));
-		if (game.col == PWHITE) printf("now:White");
-		else printf("now:Black");
+		Start:
 		int sp;
 		if (gamemode[game.col] == -1){
-			Ploc p = MlocToPloc(getCurClick());
-			bool flag = false;
-			while (!p.inBorder() || !game.testmove(p.pos())){
-				if (!flag) showCanDo(), 
-				flag = true;
+			Ploc p;
+			showCanDo();
+			do{
 				p = MlocToPloc(getCurClick());
-			}
+				if (p.x==-1 && p.y==1 && game.step){ // unmakemove
+					do{
+						game.unmakemove();
+					}while(gamemode[game.col]!=-1);
+					iPrint();
+					Sleep(200);
+					goto Start;
+				}
+				else if (p.x==-1 && p.y==0){ // exit
+					return;
+				}
+			}while (!p.inBorder() || !game.testmove(p.pos()));
 			sp=p.pos();
 		}
 		else{
 			if (gamemode[game.col] == 0) 
-				sp = random_choice(game.board, game.col);
+				sp = random_choice(game.board);
+			else if (gamemode[game.col] == 1)
+				sp = think_choice(game.board);
 			else
-				sp = think_choice(game.board, game.col);
-			logprintf("%s\n", searchstat.str().c_str());
-			Sleep(1);
+				sp = think_choice_td(game.board);
+			gotoXY({0,18}); inc(i,winsize.X) putchar(' '); 
+			gotoXY({1,18}); printf(searchstat.str().c_str());
+			logprintf("%s", debugout.str().c_str());
+			
+		}
+		if (gamemode[0]<0 || gamemode[1]<0){
+			gotoXY(PlocToMloc(sp));
+			if (game.col == PWHITE) printf("○");
+			else if (game.col == PBLACK) printf("●");
+			Sleep(200);
 		}
 		logprintf("m %d %d\n", sp/8, sp%8);
 		game.makemove(sp);
 		logprintf("%s\n%s", game.repr().c_str(), game.str().c_str());
 
-		gotoXY(PlocToMloc(sp));
-		if (game.col == PWHITE) printf("○");
-		else if (game.col == PBLACK) printf("●");
-		Sleep(1);
-
 		gotoXY({ 0,0 });
 		iPrint();
+		if (gamemode[!game.col]==-1) Sleep(200);
 	}
+	gameEnd();
 }
 
 void gameStart(){
 	game.reset();
+	inc(i, winsize.Y){
+		inc(j, winsize.X) putchar(' ');
+		puts("");
+	}
 	iPrint();
 	auto t=time(nullptr); logprintf("Game start at %s", ctime(&t));
 	logprintf("black mode: %d , white mode: %d\n", gamemode[0], gamemode[1]);
@@ -186,16 +218,18 @@ void showAbout(){
 		gotoXY({2,i});
 		for (int j=0;j<winsize.X-4;j++) putchar(' ');
 	}
-	gotoXY({2,1}); printf("Reversi_bwcore 1.3 improve0");
+	gotoXY({2,1}); printf("Reversi_bwcore 1.5");
 	gotoXY({2,3}); printf("Appearance: Console UI");
-	gotoXY({2,4}); printf("  (version=1.0   date=2016-6-20) fffasttime");
-	gotoXY({2,6}); printf("Kernel: bwcore1.2_i4 ");
-	gotoXY({2,7}); printf("  (version=1.3.0   date=2016-7-10) fffasttime");
-	gotoXY({2,8}); printf("  Description: a weak reversi AI");
-	gotoXY({36,10}); printf("[back]");
+	gotoXY({2,4}); printf("  (version=1.0.0   date=2016-6-20)");
+	gotoXY({2,5}); printf("Kernel: bwcore1.5 ");
+	gotoXY({2,6}); printf("  (version=1.5.0   date=2021-2-20)");
+	gotoXY({2,8}); printf("Author: fffasttime");
+	gotoXY({2,9}); printf("See https://github.com/fffasttime/Reversi-bwcore");
+	gotoXY({2,12}); printf("Description: A normal reversi AI");
+	gotoXY({42,15}); printf("[back]");
 	while (1){
 		Ploc p=getCurClick();
-		if (p.x==10 && p.y>=36 && p.y<42) break;
+		if (p.x==15 && p.y>=42 && p.y<48) break;
 	}
 }
 
@@ -207,9 +241,9 @@ void writeSelect(int col){
 			gotoXY({32,11}); printf("黑色：电脑");
 			switch(gamemode[PBLACK]){
 				case 0:printf("(随机)"); break;
-				case 1:printf("(测试)"); break;
-				case 2:printf("(测试)"); break;
-				case 3:printf("(测试)"); break;
+				case 1:printf("(深度)"); break;
+				case 2:printf("(时限)"); break;
+				case 3:printf("(时限)"); break;
 			}
 		}
 	}
@@ -220,9 +254,9 @@ void writeSelect(int col){
 			gotoXY({32,12}); printf("白色：电脑");
 			switch(gamemode[PWHITE]){
 				case 0:printf("(随机)"); break;
-				case 1:printf("(测试)"); break;
-				case 2:printf("(测试)"); break;
-				case 3:printf("(测试)"); break;
+				case 1:printf("(深度)"); break;
+				case 2:printf("(时限)"); break;
+				case 3:printf("(时限)"); break;
 			}
 		}
 	}
@@ -238,11 +272,11 @@ int splashScreen(){
 	}
 	printf("╚"); for (int i = 1; i < winsize.X/2-1; i++) printf("═"); printf("╝\n");
 	gotoXY({30,11}); printf("               ");
-	gotoXY({32,8}); printf("黑白棋   1.3");
+	gotoXY({34,8}); printf("黑白棋   1.5");
 	gotoXY({36,10}); printf(">>开始<<");
 	gotoXY({34,13}); printf("关于    退出");
-	gamemode[0]=-1; writeSelect(PBLACK);
-	gamemode[1]=-1; writeSelect(PWHITE);
+	gamemode[0]=1; writeSelect(PBLACK);
+	gamemode[1]=1; writeSelect(PWHITE);
 	gotoXY({0,0});
 	while (1){
 		Ploc p;
@@ -281,7 +315,6 @@ void runConsole(){
 		else if (ret<0) continue;
 		gameStart();
 		gamePlay();
-		gameEnd();
 	}
 	fclose(log_out);
 	mexit();

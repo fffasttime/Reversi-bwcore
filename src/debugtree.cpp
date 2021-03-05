@@ -6,17 +6,17 @@ void DebugTreeNode::write_board(FILE *out){
     fprintf(out, "<code>");
     int movepos=-1;
     if (fa!=nullptr) movepos=tzcnt(fa->board.occupys()^board.occupys());
-    for (int i=0;i<BSIZE2;i++){
+    inc(i,64){
         if (i==movepos) fprintf(out, "<font style='background: pink'>");
         if (bget(board.b[0]&board.b[1], i)) assertprintf(false, "pos %d has two pieces\n", i);
         else if (bget(board.b[0], i)) fprintf(out,"бё");
         else if (bget(board.b[1], i)) fprintf(out,"бЁ");
-        else if (board.testmove(i, col)) fprintf(out,"гл");
+        else if (board.testmove(i)) fprintf(out,"гл");
         else fprintf(out,"&nbsp;");
         if (i==movepos) fprintf(out, "</font>");
         if (i%8==7){
             fprintf(out, "|");
-            if (i/8==2) fprintf(out, "   board %s col %d", board.repr().c_str(), col);
+            if (i/8==2) fprintf(out, "   board %s ", board.repr().c_str());
             fprintf(out,"<br>");
         }
     }
@@ -28,17 +28,17 @@ void DebugTreeNode::write_html(FILE *out, int d, int d_limit){
 
     fprintf(out,"<details><summary><code>");
 
-    fprintf(out,"%s(depth:%d, col:%d, alpha:%.2f, beta:%.2f) -ret:",
-        fun_name.c_str(), depth, col, alpha, beta);
+    fprintf(out,"%s(depth:%d, alpha:%.2f, beta:%.2f) -ret:",
+        fun_name.c_str(), depth, alpha, beta);
 
     if (ret<=alpha) fprintf(out, "<font style='background: gold'>");
     else if (ret>=beta) fprintf(out, "<font style='background: lightblue'>");
     fprintf(out, "%.2f", -ret);
     if (ret<=alpha || ret>=beta) fprintf(out,"</font>");
 
-    fprintf(out," move:%2d ch:%2d", (int)popcnt(board.genmove(col)), (int)ch.size());
+    fprintf(out," move:%2d ch:%2d", (int)popcnt(board.genmove()), (int)ch.size());
 
-    if (popcnt(board.genmove(col))==0) //pass node
+    if (popcnt(board.genmove())==0) //pass node
         fprintf(out," <font style='background: lightgray'>(pass)</font>");
 
     fprintf(out,"</code></summary>");
@@ -49,12 +49,11 @@ void DebugTreeNode::write_html(FILE *out, int d, int d_limit){
     fprintf(out,"</div></details>\n");
 }
 
-void DebugTree::step_in(const std::string &fun_name, int depth, const Board &board, int col, Val alpha, Val beta){
+void DebugTree::step_in(const std::string &fun_name, int depth, const Board &board, Val alpha, Val beta){
     auto ch=new DebugTreeNode();
     ch->fun_name=fun_name;
     ch->depth=depth;
     ch->board=board;
-    ch->col=col;
     ch->alpha=alpha;
     ch->beta=beta;
     ch->fa=cur;

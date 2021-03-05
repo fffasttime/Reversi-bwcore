@@ -2,7 +2,7 @@
 
 #define DEBUGTREE_WARPPER_BEGIN \
 if (debug_tree)\
-debug_tree->step_in(__func__,depth, cboard, col, alpha, beta);\
+debug_tree->step_in(__func__,depth, cboard, alpha, beta);\
 auto warpper=[&]()->Val{
 #define DEBUGTREE_WARPPER_END \
 }; auto ret=warpper(); if (debug_tree) debug_tree->step_out(ret); return ret;
@@ -16,7 +16,6 @@ struct DebugTreeNode{
     std::string fun_name;
     Board board;
     int depth;
-    int col;
     Val alpha, beta;
     Val ret;
     std::vector<DebugTreeNode*> ch;
@@ -29,7 +28,7 @@ struct DebugTreeNode{
 struct DebugTree{
     DebugTreeNode *root;
     DebugTreeNode *cur;
-    void step_in(const std::string &fun_name, int depth, const Board &board, int col, Val alpha, Val beta);
+    void step_in(const std::string &fun_name, int depth, const Board &board, Val alpha, Val beta);
     void step_out(Val ret){
         cur->ret=ret;
         cur=cur->fa;
