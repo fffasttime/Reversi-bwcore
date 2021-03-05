@@ -7,6 +7,8 @@
 #include <cstdio>
 using namespace std;
 
+#define BSIZE 8
+
 extern HANDLE hOut, hIn;
 extern const COORD winsize;
 
@@ -135,11 +137,11 @@ void gameEnd(){
 	gotoXY({0, 17});
 	printf(" B:%2d  W:%2d  ", game.cnt(PBLACK), game.cnt(PWHITE));
 	if (game.winner()==PWHITE)
-		printf(" White Win"), logprintf("white win!  \n");
+		printf(" White Win!  "), logprintf("white win\n");
 	else if (game.winner()==PBLACK)
-		printf(" Black Win"), logprintf("black win!  \n");
+		printf(" Black Win!  "), logprintf("black win\n");
 	else
-		printf(" Draw!"), logprintf("game draw...   \n");
+		printf(" game draw..."), logprintf("game draw\n");
 	gotoXY({0,20});
 	printf(" [·µ»Ø]");
 	while (1){

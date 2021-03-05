@@ -6,7 +6,7 @@ void DebugTreeNode::write_board(FILE *out){
     fprintf(out, "<code>");
     int movepos=-1;
     if (fa!=nullptr) movepos=tzcnt(fa->board.occupys()^board.occupys());
-    for (int i=0;i<BSIZE2;i++){
+    inc(i,64){
         if (i==movepos) fprintf(out, "<font style='background: pink'>");
         if (bget(board.b[0]&board.b[1], i)) assertprintf(false, "pos %d has two pieces\n", i);
         else if (bget(board.b[0], i)) fprintf(out,"¡ñ");

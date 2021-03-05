@@ -123,10 +123,10 @@ void gendata(int argc, char **argv){
     if (argc==4){
         foldername=argv[1];
         phase=atoi(argv[2]);
-        foldername=atoi(argv[3]);
+        game_cnt=atoi(argv[3]);
     }
     else{
-        cout<<"Command line usage: gendate.exe <folder> <phase(0-10)> <game_cnt>\n";
+        cout<<"Command line usage: gendata.exe <folder> <phase(0-10)> <game_cnt>\n";
         cout<<"folder: "; cin>>foldername;
         cout<<"phase: "; cin>>phase;
         cout<<"game_cnt: "; cin>>game_cnt;

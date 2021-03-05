@@ -10,7 +10,7 @@ int main(){
     loadPtnData();
     loadPCData();
     Game game;
-#if 0
+#ifdef RUN_BY_STEP
     int n,x,y; scanf("%d", &n);
     inc(i,2*n-1){
         scanf("%d%d",&x,&y); 
@@ -18,13 +18,13 @@ int main(){
         else if (i) game.col=!game.col; // opp pass
     }
     if (game.hasmove()){
-        int sp=think_choice(game.board, game.col);
+        int sp=think_choice_td(game.board, game.col);
         printf("%d %d\n", sp/8, sp%8);
     }
     else puts("-1 -1");
     //debug
     printf("%s, %s\n", game.repr().c_str(), searchstat.str().c_str());
-#else // long time running
+#else
     int n,x,y; scanf("%d", &n); // skip
     for(n=0;;n++){
         scanf("%d%d", &x, &y);
@@ -39,11 +39,10 @@ int main(){
         }
         else puts("-1 -1"),puts(""), game.col=!game.col, game.board.cswap();
         //debug
-        puts(""); // data
-        puts(""); // global data
+        puts("\n"); // data + global data
         printf(">>>BOTZONE_REQUEST_KEEP_RUNNING<<<\n");
         fflush(stdout);
     }
-#endif
+#endif //RUN_BY_STEP
     return 0;
 }

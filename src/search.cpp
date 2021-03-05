@@ -146,32 +146,32 @@ void loadPCData(){
 #ifdef GENDATA_PC
 std::ofstream pc_data("data/pc_data.txt", std::ios::app);
 int pc_statecnt[64][15];
-#endif
+#endif //GENDATA_PC
 // #define USE_PC
 Val probcut(int depth, CBoard cboard, Val alpha, Val beta){
+    const Val t=1.4;
+    Val bound, ret;
     int cnt=popcnt(cboard.occupys());
 #ifdef GENDATA_PC
     pc_statecnt[cnt][depth]++;
     if (pc_statecnt[cnt][depth]>3 && rand()%(pc_statecnt[cnt][depth]-3)) return (alpha+beta)/2;
-    Val ret=search_normal(pc_depth[depth], cboard, -INF, INF);
+    ret=search_normal(pc_depth[depth], cboard, -INF, INF);
     pc_data<<cboard.repr()<<' '<<ret<<' '<<pc_depth[depth]<<' '<<depth<<' '<<cnt<<'\n';
-#else
+    return (alpha+beta)/2;
+#endif //GENDATA_PC
     PC_Param &pa=pc_param[cnt][depth];
     if (pa.sigma>50) return (alpha+beta)/2; // no data
-    const Val t=1.4;
-    Val bound,ret;
     bound=(t*pa.sigma+beta-pa.b)/pa.w;
     ret=search_normal(pc_depth[depth],cboard, bound-0.01, bound);
     if (ret>=bound) return beta;
     bound=(-t*pa.sigma+alpha-pa.b)/pa.w;
     ret=search_normal(pc_depth[depth],cboard, bound, bound+0.01);
     if (ret<bound) return alpha;
-#endif //GENDATA_PC
     return (alpha+beta)/2;
 }
 
 #define ENDSEARCH_BEGIN 6
-
+#define USE_PC
 int hash_hitc;
 bool btimeout, btimeless;
 Val search_normal(int depth, CBoard cboard, Val alpha, Val beta, bool pass){
@@ -187,9 +187,10 @@ Val search_normal(int depth, CBoard cboard, Val alpha, Val beta, bool pass){
     int remain=popcnt(cboard.emptys());
     if (remain==ENDSEARCH_BEGIN) return search_end<ENDSEARCH_BEGIN>(cboard, alpha, beta, 0);
 
-    if (depth==1)
-        return search_normal1(1, cboard, alpha, beta);
-    int firstp=ctz(move); //by default
+    // fast leaf search
+    if (depth==1) return search_normal1(1, cboard, alpha, beta);
+
+    int firstp=ctz(move); // firstp by default
 #if 1
     auto ttnode=translation_table + cboard.hash()%(1<<20);
     if (ttnode->board==cboard){
@@ -200,15 +201,16 @@ Val search_normal(int depth, CBoard cboard, Val alpha, Val beta, bool pass){
             Val val=ttnode->val;
             if (ttnode->type>=2) alpha=max(alpha, val);
             if (alpha>=beta) return alpha;
+            // forget alphacut
         }
     }
-#endif
+#endif //1
 #ifdef USE_PC
     if (depth>=3 && depth<=MPC_MAXD){
         Val val=probcut(depth, cboard, alpha, beta);
         if (val>=beta || val<=alpha) return val;
     }
-#endif
+#endif //USE_PC
     // presearch
     if (depth>3){
         auto t_move=move;
@@ -256,7 +258,7 @@ BETA_CUT:
     if (val<=alpha) ttnode->type=1;
     else if (val>=beta) ttnode->type=2;
     else ttnode->type=3;
-#endif
+#endif //1
     return val;
 #ifdef DEBUGTREE
     DEBUGTREE_WARPPER_END
@@ -358,10 +360,10 @@ int think_choice(CBoard board){
     memset(pc_statecnt,0, sizeof(pc_statecnt));
     #endif
     debugout.str("");
-    if (popcnt(board.emptys())<=12)
+    if (popcnt(board.emptys())<=6)
         search_exact_root(board);
     else
-        search_id(board, think_maxd); // id is faster at mostly time
+        search_id(board, think_maxd); // id+hash is faster most of the time
         //search_root(think_maxd, board, -1);
     return searchstat.pv[rand()%searchstat.pv.size()].first;
 }

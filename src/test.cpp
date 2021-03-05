@@ -173,6 +173,7 @@ int runTests(){
 void global_init(){
     initPtnConfig();
     loadPtnData();
+    loadPCData();
 }
 
 void runDebugMode(){

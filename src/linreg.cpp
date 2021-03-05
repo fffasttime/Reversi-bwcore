@@ -542,8 +542,10 @@ int main(int argc, char **argv){
     else if (argc==2){
         if (string(argv[1])=="merge")
             mergedata();
-        else
+        else{
             folder=argv[1];
+            train_op();
+        }
     }
     return 0;
 }

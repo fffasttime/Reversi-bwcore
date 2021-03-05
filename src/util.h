@@ -5,8 +5,6 @@
 
 #define PBLACK 0
 #define PWHITE 1
-#define BSIZE 8
-#define BSIZE2 64
 #define inc(i,n) for(int i=0;i<n;i++)
 
 typedef unsigned char u8;

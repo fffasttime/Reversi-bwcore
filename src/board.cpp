@@ -11,7 +11,7 @@ std::string Board::repr() const{
 #ifndef ONLINE
 std::string Board::str(bool fcol) const{
     std::ostringstream o;
-    for (int i=0;i<BSIZE2;i++){
+    inc(i,64){
     #ifdef _WIN32
         if (bget(b[0]&b[1], i)) assertprintf(false, "pos %d has two pieces\n", i);
         else if (bget(b[fcol], i)) o<<"\xa1\xf1"; //solid circle
