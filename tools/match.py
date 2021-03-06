@@ -1,3 +1,5 @@
+# match.py
+# a simple match dispatcher between two bots, only support botzone keep running communication mode
 from subprocess import Popen, PIPE
 import time
 import argparse

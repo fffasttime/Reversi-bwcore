@@ -1,6 +1,7 @@
 /*
 metacode.cpp
-generate constant arrays in code
+generate constant arrays code
+- deprecated because BMI2 flip code is deprecated
 author: fffasttime
 */
 #include <iostream>

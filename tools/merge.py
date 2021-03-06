@@ -1,3 +1,5 @@
+# merge.py
+# merge and simplify online code into botzone.cpp
 import re
 
 files=['util.h','util.cpp', 
@@ -35,5 +37,5 @@ source = re.sub(r"#ifdef RUN_BY_STEP([\s\S]*)#else([\s\S]*)#endif","\g<2>", sour
 source = re.sub(r"\s*\n","\n",source)
 source = re.sub(r"\n+","\n",source)
 
-with open('data/botzone.cpp', 'w') as f:
+with open('botzone.cpp', 'w') as f:
     f.write(head + source)

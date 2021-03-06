@@ -360,7 +360,7 @@ int think_choice(CBoard board){
     memset(pc_statecnt,0, sizeof(pc_statecnt));
     #endif
     debugout.str("");
-    if (popcnt(board.emptys())<=6)
+    if (popcnt(board.emptys())<=12)
         search_exact_root(board);
     else
         search_id(board, think_maxd); // id+hash is faster most of the time
@@ -369,7 +369,7 @@ int think_choice(CBoard board){
 }
 #endif //ONLINE
 
-int think_checktime=330, think_maxtime=580;
+int think_checktime=330, think_maxtime=910;
 
 int think_choice_td(CBoard board){
     debugout.str("");
@@ -385,7 +385,7 @@ int think_choice_td(CBoard board){
         });
         std::this_thread::sleep_for(std::chrono::milliseconds(think_checktime));
         btimeless=true;
-        if (tmux.try_lock_for(std::chrono::milliseconds(think_maxtime))) tmux.unlock();
+        if (tmux.try_lock_for(std::chrono::milliseconds(think_maxtime-think_checktime))) tmux.unlock();
         btimeout=true;
         thd.join();
     }

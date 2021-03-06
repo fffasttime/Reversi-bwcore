@@ -1,3 +1,4 @@
+# an experimental linear regression for probcut
 import numpy as np
 
 full_data=np.loadtxt("data/pc_ndata.txt", delimiter=',')

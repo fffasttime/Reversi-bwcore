@@ -1,3 +1,6 @@
+/*
+bwcore1.4 coeff linear regression code
+*/
 #include <iostream>
 #include <string>
 #include <cstdlib>

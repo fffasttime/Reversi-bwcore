@@ -1,3 +1,7 @@
+/*
+ptndatainfo.cpp
+This is a helper program to show bwcore1.5 coeff data metainfo
+*/
 #include <bits/stdc++.h>
 using namespace std;
 #define inc(i,n) for (int i=0;i<n;i++)
