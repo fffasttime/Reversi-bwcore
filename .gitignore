@@ -1,7 +1,7 @@
 *.o
 *.exe
 *.out
-*.log
+/*.log
 /.vscode
 /data/*
 debugtree.html

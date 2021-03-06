@@ -1,3 +1,7 @@
+/*
+judger.cpp
+botzone simplified interactive judger for reversi game
+*/
 #include <iostream>
 #include <string>
 #include "util.h"

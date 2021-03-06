@@ -1,3 +1,9 @@
+'''hexboard.py
+A simple script show hexdecimal code board
+usage:
+  <mask_hex> 
+or
+  <black_hex> <white_hex>'''
 
 def showMask(x):
     for i in range(64):
@@ -17,7 +23,11 @@ def showBoard(b, w):
         
         if i%8==7: print()
 
+print(__doc__)
+
 while True:
+    print('>', end=' ')
+
     try:
         s=input().replace(',',' ').split()
     except KeyboardInterrupt:

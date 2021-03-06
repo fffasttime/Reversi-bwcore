@@ -1,4 +1,4 @@
-// bwcore1.4, keep running version
+// bwcore1.4, botzone keep running version
 #include <iostream>
 #include <cstdio>
 #include <cstring>

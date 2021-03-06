@@ -1,0 +1,92 @@
+Match finished at Mon Feb 22 00:53:58 2021
+bot1:botzone.exe(pc open t=2.0) bot2:bwcore_online1.5.exe
+bot1 | win | loss | draw | score
+as_b | 24  |  20  |  6   | 27.0 / 50
+as_w | 35  |  12  |  3   | 36.5 / 50
+63.5 / 100
+
+Match finished at Mon Feb 22 11:54:19 2021
+bot1:botzone.exe(pc open t=2.0) bot2:bwcore_online1.5.exe
+bot1 | win | loss | draw | score
+as_b | 55  |  39  |  6   | 58.0 / 100
+as_w | 55  |  35  |  10  | 60.0 / 100
+118.0 / 200
+
+Match finished at Mon Feb 22 02:38:38 2021
+bot1:botzone.exe(pc no end) bot2:bwcore_online1.5.exe
+bot1 | win | loss | draw | score
+as_b | 54  |  38  |  8   | 58.0 / 100
+as_w | 58  |  34  |  8   | 62.0 / 100
+120.0 / 200
+
+Match finished at Mon Feb 22 16:57:02 2021
+bot1:botzone.exe(pc t=1.2) bot2:bwcore_online1.5.exe
+bot1 | win | loss | draw | score
+as_b | 56  |  40  |  4   | 58.0 / 100
+as_w | 64  |  31  |  5   | 66.5 / 100
+124.5 / 200
+
+Match finished at Mon Feb 22 17:00:15 2021
+bot1:botzone.exe(pc t=1.2) bot2:bwcore_online1.4.exe
+bot1 | win | loss | draw | score
+as_b | 44  |  5   |  1   | 44.5 / 50
+as_w | 40  |  5   |  5   | 42.5 / 50
+87.0 / 100
+
+Match finished at Tue Mar  2 02:59:09 2021
+bot1:online.exe(rawdata1, nopc) bot2:online_olddata.exe
+bot1 | win | loss | draw | score
+as_b | 55  |  37  |  8   | 59.0 / 100
+as_w | 68  |  23  |  9   | 72.5 / 100
+131.5 / 200
+
+Match finished at Tue Mar  2 03:08:41 2021
+bot1:online.exe(rawdata1, nopc) bot2:bwcore_online1.4.exe
+bot1 | win | loss | draw | score
+as_b | 70  |  25  |  5   | 72.5 / 100
+as_w | 90  |  9   |  1   | 90.5 / 100
+163.0 / 200
+
+Match finished at Tue Mar  2 21:14:12 2021
+bot1:online.exe(rawdata1, pc old)  bot2:bwcore_online1.4.exe
+bot1 | win | loss | draw | score
+as_b | 34  |  14  |  2   | 35.0 / 50
+as_w | 49  |  1   |  0   | 49.0 / 50
+84.0 / 100
+
+Match finished at Tue Mar  2 22:55:06 2021
+bot1:online.exe(rawdata1, pc old) bot2:online_olddata.exe
+bot1 | win | loss | draw | score
+as_b | 70  |  24  |  6   | 73.0 / 100
+as_w | 72  |  21  |  7   | 75.5 / 100
+148.5 / 200
+
+Match finished at Thu Mar  4 23:51:59 2021
+bot1:online.exe(rawdata2, nopc) bot2:bwcore_online1.4.exe
+bot1 | win | loss | draw | score
+as_b | 39  |  9   |  2   | 40.0 / 50
+as_w | 41  |  7   |  2   | 42.0 / 50
+82.0 / 100
+
+Match finished at Fri Mar  5 10:33:56 2021
+bot1:online.exe(rawdata2, pc old) bot2:online_olddata.exe
+bot1 | win | loss | draw | score
+as_b | 74  |  21  |  5   | 76.5 / 100
+as_w | 75  |  11  |  14  | 82.0 / 100
+158.5 / 200
+
+Match finished at Fri Mar  5 10:38:32 2021
+bot1:online_nopc.exe(rawdata2) bot2:online_olddata.exe
+bot1 | win | loss | draw | score
+as_b | 74  |  23  |  3   | 75.5 / 100
+as_w | 60  |  32  |  8   | 64.0 / 100
+139.5 / 200
+
+warning: low var
+Match finished at Fri Mar  5 11:24:16 2021
+bot1:online.exe(rawdata2, pc old) bot2:bwcore_online1.4.exe
+bot1 | win | loss | draw | score
+as_b | 40  |  7   |  3   | 41.5 / 50
+as_w | 50  |  0   |  0   | 50.0 / 50
+91.5 / 100
+

@@ -1,3 +1,13 @@
+/*
+--- encode: GB2312/GBK ---
+cui.cpp
+A simple Windows console UI
+check cmd.exe default settings: 
+	- keep 'fast edit mode' disabled
+	- Set 'default coding page' to '936 (ANSI/OEM GBK)'
+	- keep 'use old version console' enabled on Win10
+	- set colsole width larger then 80 
+*/
 #include "cui.h"
 #include "search.h"
 #include "board.h"
