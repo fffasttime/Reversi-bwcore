@@ -64,6 +64,8 @@ public:
 		if(flips) b_cur^=flips, b_opp^=flips, bts(b_cur, p);
 		return flips;
 	}
+	// prefix c_ swap color
+	// suffix _r return a new borad
 	bool cmakemove(int p){cswap();return makemove<1>(p);}
 	Board makemove_r(int p) const{Board r=*this;r.makemove(p);return r;}
 	Board cmakemove_r(int p) const{Board r(b[1],b[0]);r.makemove<1>(p);return r;}
@@ -127,7 +129,7 @@ public:
 		return 2;
 	}
 	u64 genmove() const{return board.genmove();}
-	bool hasmove() const{return popcnt(board.genmove());}
+	bool hasmove() const{return board.genmove();}
 	
 	int operator[](int p) const{
 		assertprintf(p>=0 && p<64, "invalid pos call at [%d]\n", p); 

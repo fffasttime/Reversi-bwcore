@@ -2,13 +2,15 @@
 
 ## 目标
 
-原有代码冗杂且效率低(主要代码4k+行)，可维护性差，全部重构bwcore1.3~1.4(impbwcore)代码。
+原有代码冗杂且效率低(全部代码4k+行)，可维护性差，全部重构bwcore1.3~1.4(impbwcore)代码。
 
 bwcore1.5(strongbwcore)仍然使用较传统的搜索算法。主要为快速终局搜索、快速位运算估值、pvs搜索、置换表等。实验性的内容暂不考虑。
 
 ## 辅助文件
 
 * boardhex.html 用于构造棋盘的十六进制码。
+* match.py 用于比较两个bot
+* merge.py 合并代码到单文件
 * 调试时可生成搜索树debugtree.html。父节点的ret应为所有子节点ret取负中的最大值。若节点的ret>=beta，则剪枝。
 
 ## 棋盘数据结构
@@ -19,7 +21,7 @@ bwcore1.5(strongbwcore)仍然使用较传统的搜索算法。主要为快速终
 
 生成可行位置、位运算棋步、对称变换、计数。
 
-* 更新：Board现在不区分黑白颜色，board.b[0]为先手方，board.b[1]为后手方。
+* 更新：Board现在不区分黑白颜色，board.b[0]为先手方，board.b[1]为后手方。Game类保存颜色，仅用于显示。
 
 ### 可行位置生成
 
@@ -41,7 +43,7 @@ bwcore1.5(strongbwcore)仍然使用较传统的搜索算法。主要为快速终
 
 `id`  `flipv`   `lrotate` `rrotate`
 
-`id+bsw(fliph)` `flipv+bsw(r180)`  `lrotate+bsw(transpose)`  `rrotate+bsw`
+`id+bsw(fliph)` `flipv+bsw(180 rotate)`  `lrotate+bsw(transpose)`  `rrotate+bsw`
 
 其中`flipv`按中央竖线对称，`rotate`旋转90度，`transpose`按主对角线对称。
 
@@ -54,6 +56,8 @@ bwcore1.5(strongbwcore)仍然使用较传统的搜索算法。主要为快速终
 * e1(edga+2x),e2,e3,e4直线, k8,k7,k6,k5,k4斜线
 * c52, c33 角
 * wmob, wodd, wb
+
+1.5.1更新：加入中心棋子数wcinner, 边棋子数wcedge，角ccor，(2,2)位置cx22
 
 使用e2-e4,k8-k4时，无需对棋盘变换。c52需要全部8种变换。c33需要`flipv,fliph,r180`，e1需要`fliph,lrotate,rrotate`。
 
@@ -81,11 +85,13 @@ bwcore1.5(strongbwcore)仍然使用较传统的搜索算法。主要为快速终
 
 现在只试探搜索找到pv作为主要节点，不对所有节点排序。(未实验排序，考虑到剪枝搜索无法准确排序，而且即使不准确时次大节点对PVS空窗验证影响不大)
 
-> 递归执行。当搜索目的为空窗验证时，选取好的pv仍能有效剪枝。
+> 目前为递归执行。当搜索目的为空窗验证时，选取好的pv仍能有效剪枝。
 
 ### 置换表
 
-黑白棋很少出现相同的搜索树分支。因此置换表只能用于减少迭代加深或试探搜索时出现的重复，效果一般，命中率不到1%，这里只能减少5%左右的节点。
+黑白棋很少出现相同的搜索树分支。因此置换表只能用于减少迭代加深或试探搜索时出现的重复。用于pvs实验效果一般，命中率不到1%，只能减少5%左右的节点。
+
+更新：在使用迭代加深和试探搜索时，置换表效果提高。
 
 ### 终局优化
 
@@ -95,7 +101,7 @@ bwcore1.5(strongbwcore)仍然使用较传统的搜索算法。主要为快速终
 
 ### 概率剪枝
 
-同时可做概率剪枝。变量cnt, height。参数为pc_depth, slope, bias, sigma。
+变量cnt, height。参数为pc_depth, slope, bias, sigma。
 
 概率剪枝会对上、下界做一次浅层的零窗搜索。
 
@@ -115,7 +121,7 @@ bwcore1.5(strongbwcore)仍然使用较传统的搜索算法。主要为快速终
 
 `ph` `printhex` 当前局面的十六进制编码
 
-`m x y` `makemove x y` 在x,y处下子，坐标从0,0开始
+`m x y` `makemove x y` 在x行y列下子，坐标从0,0开始
 
 `u` `unmakemove` 撤销一步 
 
@@ -125,13 +131,13 @@ bwcore1.5(strongbwcore)仍然使用较传统的搜索算法。主要为快速终
 
 `play` 思考下一步并执行
 
-`tree` 搜索并保存搜索树
+`tree depth` 搜索指定步数并保存html格式的搜索树
 
 `cnt` 统计黑白棋子数
 
 `reset` 重置为游戏开始
 
-`ld hex0 hex1` `board hex0 hex1` 将当前局面置为十六进制编码值
+`ld hex0 hex1` `board hex0 hex1` 设置当前局面为十六进制编码指定的局面
 
 `flipv` `fliph` `rotatel` `rotater` 变换棋盘
 
@@ -140,6 +146,8 @@ bwcore1.5(strongbwcore)仍然使用较传统的搜索算法。主要为快速终
 `fcol` 交换当前玩家颜色
 
 `col 0` `col 1` 设置当前玩家颜色(0黑，1白)
+
+`savesgf filename` 以sgf格式保存当前棋谱 
 
 `q` `quit` `exit` 退出
 
