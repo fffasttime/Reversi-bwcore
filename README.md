@@ -2,7 +2,7 @@
 
 A simple but relative strong Reversi(Othello) bot running on [botzone.org](https://botzone.org)
 
-version: 1.5.1
+version: 1.5.2
 
 For detail rule and introduction of the game, see [https://en.wikipedia.org/wiki/Reversi](https://en.wikipedia.org/wiki/Reversi).
 

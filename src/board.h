@@ -69,7 +69,7 @@ public:
 	Board cmakemove_r(int p) const{Board r(b[1],b[0]);r.makemove<1>(p);return r;}
 	int cnt0() const{return popcnt(b[0]);}
 	int cnt1() const{return popcnt(b[1]);}
-	u64 hash() const{return (b[0]*19260817)^b[1];}
+	u64 hash() const{return ((b[0]*19260817)^b[1])%998244353;}
 
 	Board cswap_r() const{return Board(b[1],b[0]);}
 	void cswap(){std::swap(b[0],b[1]);}

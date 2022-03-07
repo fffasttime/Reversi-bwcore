@@ -226,15 +226,27 @@ void runDebugMode(){
             printf("macro DEBUGTREE hasn't defined\n");
         #endif
         }
-        else if (cmd=="think"){
+        else if (cmd=="t" || cmd=="think"){
             if (game.isend()) puts("no move");
             else{
                 int p=think_choice(game.board);
                 printf("%d %d\n", p/8, p%8);
-                printf("%s\n",searchstat.str().c_str());
+                printf("%s\n", debugout.str().c_str());
             }
         }
-        else if (cmd=="play"){
+        else if (cmd=="td"){
+            if (game.isend()) puts("no move");
+            else{
+                std::cin>>std::dec>>think_maxd;
+                int p=think_choice(game.board);
+                printf("%d %d\n", p/8, p%8);
+                printf("%s\n", debugout.str().c_str());
+            }
+        }
+        else if (cmd=="fl" || cmd=="flag"){
+            std::cin>>std::dec>>debug_flag;
+        }
+        else if (cmd=="pl" || cmd=="play"){
             if (game.isend()) puts("no move");
             else{
                 int p=think_choice(game.board);
@@ -248,7 +260,7 @@ void runDebugMode(){
         }
         else if (cmd=="ld" || cmd=="board"){
             u64 x, y;
-            std::cin>>std::hex>>x>>y;
+            std::cin>>std::hex>>x>>y>>std::dec;
             if (x&y){
                 puts("invalid");
             }
