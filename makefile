@@ -31,6 +31,9 @@ test: $(objects)
 gendata: $(objects)
 	$(CXX) $(objects) src/gendata.cpp $(CXXFLAGS) -o $(output)
 
+libboardfeature: 
+	$(CXX) -fPIC -shared src/boardfeature.cpp $(CXXFLAGS) -o $@.so
+
 judger: util.o board.o
 	$(CXX) util.o board.o src/judger.cpp $(CXXFLAGS) -o $(output)
 

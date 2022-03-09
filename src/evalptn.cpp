@@ -1,6 +1,7 @@
 #include "util.h"
 #include "evalptn.h"
 #include <iostream>
+#include <cassert>
 
 #define EVAL_FILE "data/rawdata2/reversicoeff.bin"
 

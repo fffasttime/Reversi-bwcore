@@ -1,6 +1,6 @@
 #pragma once
 #include "board.h"
-
+#include <fstream>
 constexpr unsigned short pow3[]={1,3,9,27,81,243,729,2187,6561,19683,59049};
 
 #ifndef ONLINE
