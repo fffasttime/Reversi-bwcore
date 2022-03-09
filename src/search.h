@@ -16,7 +16,7 @@ typedef std::pair<int, Val> PosVal;
 #endif
 
 Val search_end2(CBoard board);
-inline Val eval_end(CBoard board){return board.cnt0()-popcnt(board.b[1]);}
+inline Val eval_end(CBoard board){return board.cnt0()-board.cnt1();}
 
 template<int depth>
 Val search_end(CBoard cboard, Val alpha, Val beta, bool pass){
