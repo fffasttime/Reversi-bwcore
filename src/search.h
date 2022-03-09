@@ -43,14 +43,15 @@ Val search_end(CBoard cboard, Val alpha, Val beta, bool pass){
 
 struct SearchStat{
     int depth, leafcnt;
-    int t_start, tl; 
+    int t_start, tl;
+    int hashhit;
     std::vector<PosVal> pv;
     Val maxv;
     void timing(){
         tl=clock()-t_start;
         t_start=clock();
     }
-    void reset(int _depth){leafcnt=0; depth=_depth; t_start=clock(); maxv=-INF;}
+    void reset(int _depth){leafcnt=hashhit=0; depth=_depth; t_start=clock(); maxv=-INF;}
     std::string str();
 };
 
@@ -60,6 +61,9 @@ Val search_normal(int depth, CBoard cboard, Val alpha, Val beta, bool pass=0);
 constexpr int MPC_MAXD=14;
 
 #ifndef ONLINE
+extern u64 debug_flag;
+extern std::ostringstream debugout;
+
 Val search_exact(int depth, CBoard cboard, Val alpha, Val beta, bool pass=0);
 int random_choice(CBoard board);
 int think_choice(CBoard board);

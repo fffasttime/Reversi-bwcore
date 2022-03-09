@@ -160,7 +160,7 @@ public:
 	Board cmakemove_r(int p) const{Board r(b[1],b[0]);r.makemove<1>(p);return r;}
 	int cnt0() const{return popcnt(b[0]);}
 	int cnt1() const{return popcnt(b[1]);}
-	u64 hash() const{return (b[0]*19260817)^b[1];}
+	u64 hash() const{return ((b[0]*19260817)^b[1])%998244353;}
 	Board cswap_r() const{return Board(b[1],b[0]);}
 	void cswap(){std::swap(b[0],b[1]);}
 	void flip_h(){::flip_h(b[0]);::flip_h(b[1]);}
@@ -377,23 +377,26 @@ Val search_end(CBoard cboard, Val alpha, Val beta, bool pass){
 struct SearchStat{
     int depth, leafcnt;
     int t_start, tl;
+    int hashhit;
     std::vector<PosVal> pv;
     Val maxv;
     void timing(){
         tl=clock()-t_start;
         t_start=clock();
     }
-    void reset(int _depth){leafcnt=0; depth=_depth; t_start=clock(); maxv=-INF;}
+    void reset(int _depth){leafcnt=hashhit=0; depth=_depth; t_start=clock(); maxv=-INF;}
     std::string str();
 };
 int search_root(int depth, CBoard cboard, int suggestp=-1);
 Val search_normal(int depth, CBoard cboard, Val alpha, Val beta, bool pass=0);
 constexpr int MPC_MAXD=14;
+u64 debug_flag;
 SearchStat searchstat, searchstat_sum;
 std::string SearchStat::str(){
     std::ostringstream o;
     o<<"dep:"<<depth;
     o<<", "; o<<"cnt:"<<leafcnt;
+    o<<", "; o<<"hc:"<<hashhit;
     o<<", "; o<<"tl:"<<tl;
     o<<", pv:["; bool flag=0;
     for (auto it:pv){
@@ -408,7 +411,7 @@ struct TranslationTableNode{
     Board board;
     u8 pv, depth;
     u8 type;
-    Val val;
+    Val alpha, beta;
 }translation_table[1<<20];
 Val search_end2(CBoard cboard){
     searchstat.leafcnt++;
@@ -515,7 +518,6 @@ Val probcut(int depth, CBoard cboard, Val alpha, Val beta){
 }
 #define ENDSEARCH_BEGIN 6
 #define USE_PC
-int hash_hitc;
 bool btimeout, btimeless;
 Val search_normal(int depth, CBoard cboard, Val alpha, Val beta, bool pass){
     if (unlikely(btimeout)) return 0;
@@ -528,14 +530,15 @@ Val search_normal(int depth, CBoard cboard, Val alpha, Val beta, bool pass){
     if (remain==ENDSEARCH_BEGIN) return search_end<ENDSEARCH_BEGIN>(cboard, alpha, beta, 0);
     if (depth==1) return search_normal1(1, cboard, alpha, beta);
     int firstp=ctz(move);
-    auto ttnode=translation_table + cboard.hash()%(1<<20);
+    auto ttnode=translation_table + (cboard.hash()+depth)%(1<<20);
+    Val alpha0=alpha, beta0=beta;
     if (ttnode->board==cboard){
         firstp = ttnode->pv;
-        hash_hitc++;
+        searchstat.hashhit++;
         if (ttnode->depth==depth){
-            Val val=ttnode->val;
-            if (ttnode->type>=2) alpha=max(alpha, val);
-            if (alpha>=beta) return alpha;
+            alpha=std::max(alpha, ttnode->alpha);
+            beta=std::min(beta, ttnode->beta);
+            if (alpha>=beta) return beta;
         }
     }
 #ifdef USE_PC
@@ -578,15 +581,15 @@ Val search_normal(int depth, CBoard cboard, Val alpha, Val beta, bool pass){
     }
 BETA_CUT:
     if (unlikely(btimeout)) return 0;
-    if (!(ttnode->board==cboard)){
+    if (!(ttnode->board==cboard) || ttnode->depth<depth){
         ttnode->board=cboard;
         ttnode->depth=depth;
+        ttnode->alpha=-INF;
+        ttnode->beta=INF;
+        ttnode->pv=pv;
     }
-    ttnode->pv=pv;
-    ttnode->val=val;
-    if (val<=alpha) ttnode->type=1;
-    else if (val>=beta) ttnode->type=2;
-    else ttnode->type=3;
+    if (val>=alpha0+0.001) ttnode->alpha=std::max(ttnode->alpha, val);
+    if (val<=beta0-0.001) ttnode->beta=std::min(ttnode->beta, val);
     return val;
 }
 int random_choice(CBoard board){
@@ -617,7 +620,6 @@ void search_exact_root(CBoard cboard){
     debugout<<searchstat.str()<<'\n';
 }
 int search_root(int depth, CBoard cboard, int suggestp){
-    hash_hitc=0;
     searchstat.reset(depth);
     u64 move=cboard.genmove();
     std::vector<PosVal> result;
@@ -639,7 +641,7 @@ int search_root(int depth, CBoard cboard, int suggestp){
     searchstat.maxv=alpha;
     searchstat.timing();
     searchstat.pv.assign(result.begin(), result.end());
-    debugout<<hash_hitc<<' '<<searchstat.str()<<'\n';
+    debugout<<searchstat.str()<<'\n';
     return suggestp;
 }
 void search_id(CBoard board, int maxd){
@@ -655,14 +657,14 @@ void search_id(CBoard board, int maxd){
     searchstat_sum.leafcnt+=searchstat.leafcnt;
     debugout<<"st:"<<searchstat_sum.tl<<"  sc:"<<searchstat_sum.leafcnt<<'\n';
 }
-int think_checktime=330, think_maxtime=580;
+int think_checktime=330, think_maxtime=910;
 int think_choice_td(CBoard board){
     debugout.str("");
     if (popcnt(board.emptys())<=12)
         search_exact_root(board);
     else{
         btimeless=btimeout=false;
-        std::timed_mutex tmux;
+        static std::timed_mutex tmux;
         std::thread thd([&]{
             tmux.lock();
             search_id(board, popcnt(board.emptys()));
@@ -670,7 +672,7 @@ int think_choice_td(CBoard board){
         });
         std::this_thread::sleep_for(std::chrono::milliseconds(think_checktime));
         btimeless=true;
-        if (tmux.try_lock_for(std::chrono::milliseconds(think_maxtime))) tmux.unlock();
+        if (tmux.try_lock_for(std::chrono::milliseconds(think_maxtime-think_checktime))) tmux.unlock();
         btimeout=true;
         thd.join();
     }

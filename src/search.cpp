@@ -11,11 +11,13 @@
 #include <fstream>
 #include <cstring>
 
+u64 debug_flag;
 SearchStat searchstat, searchstat_sum;
 std::string SearchStat::str(){
     std::ostringstream o;
     o<<"dep:"<<depth;
     o<<", "; o<<"cnt:"<<leafcnt;
+    o<<", "; o<<"hc:"<<hashhit;
     o<<", "; o<<"tl:"<<tl;
     o<<", pv:["; bool flag=0;
     for (auto it:pv){
@@ -32,7 +34,7 @@ struct TranslationTableNode{
     u8 pv, depth;
     //0 nothing, 1:upper bound, 2:lower bound, 3:pv
     u8 type;
-    Val val;
+    Val alpha, beta;
 }translation_table[1<<20];
 
 Val search_end2(CBoard cboard){
@@ -172,7 +174,6 @@ Val probcut(int depth, CBoard cboard, Val alpha, Val beta){
 
 #define ENDSEARCH_BEGIN 6
 #define USE_PC
-int hash_hitc;
 bool btimeout, btimeless;
 Val search_normal(int depth, CBoard cboard, Val alpha, Val beta, bool pass){
     if (unlikely(btimeout)) return 0;
@@ -192,16 +193,16 @@ Val search_normal(int depth, CBoard cboard, Val alpha, Val beta, bool pass){
 
     int firstp=ctz(move); // firstp by default
 #if 1
-    auto ttnode=translation_table + cboard.hash()%(1<<20);
+    auto ttnode=translation_table + (cboard.hash()+depth)%(1<<20);
+    Val alpha0=alpha, beta0=beta;
     if (ttnode->board==cboard){
         firstp = ttnode->pv;
         assertprintf(move>>firstp&1, "invalid hash pv %d", firstp);
-        hash_hitc++;
+        searchstat.hashhit++;
         if (ttnode->depth==depth){
-            Val val=ttnode->val;
-            if (ttnode->type>=2) alpha=max(alpha, val);
-            if (alpha>=beta) return alpha;
-            // forget alphacut
+            alpha=std::max(alpha, ttnode->alpha);
+            beta=std::min(beta, ttnode->beta);
+            if (alpha>=beta) return beta;
         }
     }
 #endif //1
@@ -248,16 +249,15 @@ Val search_normal(int depth, CBoard cboard, Val alpha, Val beta, bool pass){
 BETA_CUT:
     if (unlikely(btimeout)) return 0;
 #if 1
-    if (!(ttnode->board==cboard)){ //hash update
+    if (!(ttnode->board==cboard) || ttnode->depth<depth){ //hash update
         ttnode->board=cboard;
         ttnode->depth=depth;
+        ttnode->alpha=-INF;
+        ttnode->beta=INF;
+        ttnode->pv=pv;
     }
-    assertprintf(cboard.genmove()>>pv&1, "invalid hash insert pv %d", pv);
-    ttnode->pv=pv;
-    ttnode->val=val;
-    if (val<=alpha) ttnode->type=1;
-    else if (val>=beta) ttnode->type=2;
-    else ttnode->type=3;
+    if (val>=alpha0+0.001) ttnode->alpha=std::max(ttnode->alpha, val);
+    if (val<=beta0-0.001) ttnode->beta=std::min(ttnode->beta, val);
 #endif //1
     return val;
 #ifdef DEBUGTREE
@@ -309,7 +309,6 @@ int search_root(int depth, CBoard cboard, int suggestp){
     if (debug_tree)
         debug_tree->step_in(__func__,depth, cboard, -INF, INF);
 #endif
-    hash_hitc=0;
     searchstat.reset(depth);
     u64 move=cboard.genmove();
     assertprintf(move, "nowhere to play\n");
@@ -335,7 +334,7 @@ int search_root(int depth, CBoard cboard, int suggestp){
     searchstat.maxv=alpha;
     searchstat.timing();
     searchstat.pv.assign(result.begin(), result.end());
-    debugout<<hash_hitc<<' '<<searchstat.str()<<'\n';
+    debugout<<searchstat.str()<<'\n';
     return suggestp;
 }
 
@@ -355,10 +354,18 @@ void search_id(CBoard board, int maxd){
 
 #ifndef ONLINE
 int think_maxd=11;
+
+void reset_hash(){
+    if (debug_flag&32)
+        for (int i=0;i<1<<20;i++)
+            translation_table[i].board = Board(0,0);
+}
+
 int think_choice(CBoard board){
     #ifdef GENDATA_PC
     memset(pc_statecnt,0, sizeof(pc_statecnt));
     #endif
+    reset_hash();
     debugout.str("");
     if (popcnt(board.emptys())<=12)
         search_exact_root(board);
@@ -370,6 +377,7 @@ int think_choice(CBoard board){
 #endif //ONLINE
 
 int think_checktime=330, think_maxtime=910;
+//int think_checktime=100, think_maxtime=300;
 
 int think_choice_td(CBoard board){
     debugout.str("");
@@ -377,7 +385,7 @@ int think_choice_td(CBoard board){
         search_exact_root(board);
     else{
         btimeless=btimeout=false;
-        std::timed_mutex tmux;
+        static std::timed_mutex tmux;
         std::thread thd([&]{
             tmux.lock();
             search_id(board, popcnt(board.emptys()));
