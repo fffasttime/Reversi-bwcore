@@ -207,7 +207,7 @@ Val search_normal(int depth, CBoard cboard, Val alpha, Val beta, bool pass){
     }
 #endif //1
 #ifdef USE_PC
-    if (depth>=3 && depth<=MPC_MAXD){
+    if (depth>=3 && depth<=MPC_MAXD && !(debug_flag&64)){
         Val val=probcut(depth, cboard, alpha, beta);
         if (val>=beta || val<=alpha) return val;
     }

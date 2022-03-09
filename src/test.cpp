@@ -320,6 +320,7 @@ void runDebugMode(){
 }
 
 int main(int argc, char **argv){
+    for (int i=0;i<16;i++) showMask(bitptn::bsympos[i]);
     global_init();
     if (argc==2)
         runTests();

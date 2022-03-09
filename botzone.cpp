@@ -222,7 +222,7 @@ std::string Game::repr() const{
     return o.str();
 }
 constexpr unsigned short pow3[]={1,3,9,27,81,243,729,2187,6561,19683,59049};
-#define EVAL_FILE "data/rawdata2/reversicoeff.bin"
+#define EVAL_FILE "data/reversicoeff.bin"
 constexpr int Eval_PrTable[61]={-1,-1,0,0,0,1,1,1,2,2,2,3,3,3,4,4,4,4,5,5,5,5,6,6,6,6,6,7,7,7,7,7,8,8,8,8,8,8,9,9,9,9,9,9,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10};
 unsigned short pow4to3_10[1<<20], pow4to3_9[1<<18];
 struct CoeffPack{
@@ -599,7 +599,7 @@ int random_choice(CBoard board){
     return pos[rand()%pos.size()];
 }
 std::ostringstream debugout;
-float search_delta=1.0;
+float search_delta=0.5;
 void search_exact_root(CBoard cboard){
     searchstat.reset(popcnt(cboard.emptys()));
     u64 move=cboard.genmove();

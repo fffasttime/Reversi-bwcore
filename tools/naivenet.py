@@ -6,9 +6,14 @@ from torch.utils.data import DataLoader, Dataset
 import numpy as np
 import numpy.ctypeslib as npct
 from ctypes import c_int, c_float, c_uint64, CDLL, WinDLL
-import os
+import time
+import os, sys
 
-Ninput=54
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+Nvaluefature = 16
+Nptnfeature = 48
+Ninput= Nvaluefature + Nptnfeature
 array_1d_i64 = npct.ndpointer(dtype=np.int64, ndim=1, flags='CONTIGUOUS')
 
 # load the library, using numpy mechanisms
@@ -32,6 +37,7 @@ class BoardData(Dataset):
                 b1, b2, v=line.split()
                 self.board.append((int(b1, 16), int(b2, 16)))
                 self.value.append(float(v))
+                vsum+=float(v)
                 self.len+=1
         vsum/=self.len
         print(f"{self.len} boards, average v={vsum}")
@@ -43,7 +49,7 @@ class BoardData(Dataset):
         farray = np.ndarray(Ninput, dtype=np.int64)
         n = libbf.get_feature(self.board[index][0], self.board[index][1], 1, farray)
         assert(n==Ninput)
-        return farray[:6], farray[6:Ninput], self.value[index], 0
+        return farray[:Nvaluefature], farray[Nvaluefature:Ninput], self.value[index], 0
 
 class FC(Module):
     def __init__(self):
@@ -79,12 +85,14 @@ class FC(Module):
                 self.register_parameter(k, self.boardfeature[k])
 
         self.nchannel = 1
-        hidden = 64
-        self.layer=torch.nn.Sequential(torch.nn.Linear(48*self.nchannel+6, hidden), torch.nn.ReLU(),
+        hidden = 16
+        assert(Nptnfeature==len(order))
+
+        self.layer=torch.nn.Sequential(torch.nn.Linear(Nptnfeature*self.nchannel+Nvaluefature, hidden), torch.nn.ReLU(),
                                        torch.nn.Linear(hidden, hidden), torch.nn.ReLU()
                                         )
         self.out=torch.nn.Linear(hidden, 1)
-        self.linear=torch.nn.Linear(48*self.nchannel+6, 1)
+        self.linear=torch.nn.Linear(48*self.nchannel+Nvaluefature, 1)
         print("nchannel:", self.nchannel)
     
     def forward_xboard(self, xboard):
@@ -96,6 +104,8 @@ class FC(Module):
         return vboard
 
     def forward(self, xvalue, xboard):
+        xvalue.to(device)
+        xboard.to(device)
         x=torch.cat([xvalue] + self.forward_xboard(xboard), dim=1)
         #return self.linear(x).reshape(-1)
 
@@ -133,19 +143,25 @@ def test(net, testdata):
     print('test mse:%.03f mae:%.03f' % (sum_mse / len(testdata), sum_mae/ len(testdata)), end='')
     print('  correct:%.03f%%' % (100 * accurancy / len(testdata)))
 
-def train(net: Module, data):
+def train(net: Module, datafile):
+    torch.set_num_threads(8)
+
+    data = BoardData(datafile)
     batch_size = 256
-    testdata, traindata = torch.utils.data.random_split(data, [len(data)//20, len(data)-len(data)//20])
+    
+    testdata, traindata = torch.utils.data.random_split(data, [len(data)//20, len(data)-len(data)//20], torch.manual_seed(0))
     loader=DataLoader(traindata, batch_size=batch_size, shuffle=True)
 
     optimizer = torch.optim.Adam(net.parameters(), lr=3e-3)
     epochs=10
 
     #testnaive(testdata)
+    net.to(device)
     test(net, testdata)
 
     loss_func = 'mse'
     print("loss_func:", loss_func)
+    trainout = ""
     
     for epoch in range(epochs):
         #print(net.forward_xboard(torch.tensor([traindata[0][1]])))
@@ -171,14 +187,25 @@ def train(net: Module, data):
             batch_acc=torch.sum(torch.sign(value)==torch.sign(v))
             accurancy+=batch_acc
         
-        print('[%d,%d] mse:%.03f mae:%0.03f' % (epoch + 1, epochs, sum_mse / len(traindata), sum_mae / len(traindata)), end='')
-        print('  correct:%.03f%%' % (100 * accurancy / len(traindata)))
+        trainout = '[%d,%d] mse:%.03f mae:%0.03f  correct:%.03f%%' % (epoch + 1, epochs, sum_mse / len(traindata), sum_mae / len(traindata), 100 * accurancy / len(traindata))
+        print(trainout)
         #print(net.boardfeature['cx22'])
 
         net.eval()
         test(net, testdata)
-
+    
     #torch.save(net, 'data/FCnet.pth')
 
+    with open("train.log", "a") as f:
+        sys.stdout = f
+        f.write(f"{datafile} {time.ctime(time.time())}, {len(data)} board\n")
+        print('Nvalue = %d -ccor -cx22 +pmove'%Nvaluefature)
+        print('Nptn =',len(net.order), ' '.join(net.order))
+        print(trainout)
+        net.eval()
+        test(net, testdata)
+        print()
+
+
 if __name__=='__main__':
-    train(FC(), BoardData('data/rawdata3/data8_10.txt'))
+    train(FC(), 'data/rawdata3/data8_10.txt')

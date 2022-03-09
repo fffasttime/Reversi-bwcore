@@ -5,14 +5,14 @@ int gen_nnue_input(const Board &board, long long *feature){
     int empty_cnt = popcnt(board.emptys());
 
     Board b_id=board;
-    int cfeature=0;
+    int cfeature=0; 
 
     #define S(expr) feature[cfeature++]=expr;
     S(1); //constant
-    int cmob = popcnt(b_id.genmove());
-    int codd = empty_cnt%2;
-    S(codd);
-    S(cmob);
+    u64 moves=b_id.genmove();
+    S(popcnt(moves));
+    inc(i, 10) S(popcnt(moves&bsympos[i]));
+    int codd = empty_cnt%2; S(codd);
     S(popcnt(b_id.b[0]&pinner)-popcnt(b_id.b[1]&pinner));
     int cedge=popcnt(b_id.b[0]&pedge)-popcnt(b_id.b[1]&pedge);
     S(cedge);
@@ -57,10 +57,12 @@ int gen_nnue_input(const Board &board, long long *feature){
     
     OP_EXT(b_id, edge2x, 10) S(pow4to3_10[x]);
     OP_EXT(b_id, c33, 9) S(pow4to3_9[x]);
+    //OP_EXT(b_id, c3cor, 7) S(rand()%4096);
     OP_EXT(b_id, c52, 10) S(pow4to3_10[x]);
 
     Board b_v=b_id; b_v.flip_v();
     OP_EXT(b_v, c33, 9) S(pow4to3_9[x]);
+    //OP_EXT(b_id, c3cor, 7) S(rand()%4096);
     OP_EXT(b_v, c52, 10) S(pow4to3_10[x]);
 
     Board b_l=b_id; b_l.rotate_l();
@@ -75,9 +77,11 @@ int gen_nnue_input(const Board &board, long long *feature){
     b_id.flip_h(); b_v.flip_h(); b_l.flip_h(); b_r.flip_h();
     OP_EXT(b_id, edge2x, 10) S(pow4to3_10[x]);
     OP_EXT(b_id, c33, 9) S(pow4to3_9[x]);
+    //OP_EXT(b_id, c3cor, 7) S(rand()%4096);
     OP_EXT(b_id, c52, 10) S(pow4to3_10[x]);
     
     OP_EXT(b_v, c33, 9) S(pow4to3_9[x]);
+    //OP_EXT(b_id, c3cor, 7) S(rand()%4096);
     OP_EXT(b_v, c52, 10) S(pow4to3_10[x]);
     
     OP_EXT(b_l, c52, 10) S(pow4to3_10[x]);
