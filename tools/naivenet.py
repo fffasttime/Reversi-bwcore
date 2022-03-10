@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
 import numpy as np
 import numpy.ctypeslib as npct
-from ctypes import c_int, c_float, c_uint64, CDLL, WinDLL
+from ctypes import c_int, c_float, c_uint64
 import time
 import os, sys
 
@@ -21,9 +21,10 @@ libbf = npct.load_library("libboardfeature.so", '.')
 libbf.init()
 
 # setup the return typs and argument types
-libbf.get_feature.restype = c_int
 libbf.get_feature.argtypes = [c_uint64, c_uint64, c_int, array_1d_i64]
-
+libbf.get_feature.restype = c_int
+libbf.get_emptys.argtypes = [c_uint64, c_uint64]
+libbf.get_emptys.restype = c_int
 
 class BoardData(Dataset):
     def __init__(self, filename):
@@ -35,7 +36,8 @@ class BoardData(Dataset):
         with open(filename,'r') as f:
             for line in f.readlines():
                 b1, b2, v=line.split()
-                self.board.append((int(b1, 16), int(b2, 16)))
+                b1, b2=int(b1, 16), int(b2, 16)
+                self.board.append((b1, b2))
                 self.value.append(float(v))
                 vsum+=float(v)
                 self.len+=1
@@ -49,7 +51,7 @@ class BoardData(Dataset):
         farray = np.ndarray(Ninput, dtype=np.int64)
         n = libbf.get_feature(self.board[index][0], self.board[index][1], 1, farray)
         assert(n==Ninput)
-        return farray[:Nvaluefature], farray[Nvaluefature:Ninput], self.value[index], 0
+        return farray[:Nvaluefature].astype(np.float32), farray[Nvaluefature:Ninput], self.value[index], 0
 
 class FC(Module):
     def __init__(self):
@@ -104,8 +106,6 @@ class FC(Module):
         return vboard
 
     def forward(self, xvalue, xboard):
-        xvalue.to(device)
-        xboard.to(device)
         x=torch.cat([xvalue] + self.forward_xboard(xboard), dim=1)
         #return self.linear(x).reshape(-1)
 
@@ -129,16 +129,17 @@ def testnaive(testdata):
 
 
 def test(net, testdata):
-    sum_mse=0
-    sum_mae=0
-    accurancy=0
+    sum_mse=0.0
+    sum_mae=0.0
+    accurancy=0.0
     testloader=DataLoader(testdata, batch_size=64, shuffle=False)
     
     for xvalue, xboard, value, dv in testloader:
+        xvalue, xboard, vaule = xvalue.to(device), xboard.to(device), value.to(device)
         v=net(xvalue, xboard)
         sum_mse+=torch.sum((value-v)**2)
         sum_mae+=torch.sum((value-v).abs()).data
-        batch_acc=torch.sum(torch.sign(value)==torch.sign(v))
+        batch_acc=torch.sum(torch.sign(value+0.5)==torch.sign(v+0.5))
         accurancy+=batch_acc
     print('test mse:%.03f mae:%.03f' % (sum_mse / len(testdata), sum_mae/ len(testdata)), end='')
     print('  correct:%.03f%%' % (100 * accurancy / len(testdata)))
@@ -149,7 +150,7 @@ def train(net: Module, datafile):
     data = BoardData(datafile)
     batch_size = 256
     
-    testdata, traindata = torch.utils.data.random_split(data, [len(data)//20, len(data)-len(data)//20], torch.manual_seed(0))
+    testdata, traindata = torch.utils.data.random_split(data, [len(data)//20, len(data)-len(data)//20])
     loader=DataLoader(traindata, batch_size=batch_size, shuffle=True)
 
     optimizer = torch.optim.Adam(net.parameters(), lr=3e-3)
@@ -165,12 +166,13 @@ def train(net: Module, datafile):
     
     for epoch in range(epochs):
         #print(net.forward_xboard(torch.tensor([traindata[0][1]])))
-        sum_mse=0
-        sum_mae=0
-        accurancy=0
+        sum_mse=0.0
+        sum_mae=0.0
+        accurancy=0.0
         net.train()
         for xvalue, xboard, value, dv in loader:
             optimizer.zero_grad()
+            xvalue, xboard, vaule = xvalue.to(device), xboard.to(device), value.to(device)
             v=net(xvalue, xboard)
             mse = (value-v)**2
             mae = (value-v).abs()
@@ -184,7 +186,7 @@ def train(net: Module, datafile):
             
             sum_mse+= torch.sum(mse).data
             sum_mae+= torch.sum(mae).data
-            batch_acc=torch.sum(torch.sign(value)==torch.sign(v))
+            batch_acc=torch.sum(torch.sign(value+0.5)==torch.sign(v+0.5))
             accurancy+=batch_acc
         
         trainout = '[%d,%d] mse:%.03f mae:%0.03f  correct:%.03f%%' % (epoch + 1, epochs, sum_mse / len(traindata), sum_mae / len(traindata), 100 * accurancy / len(traindata))
@@ -208,4 +210,6 @@ def train(net: Module, datafile):
 
 
 if __name__=='__main__':
-    train(FC(), 'data/rawdata3/data8_10.txt')
+    folder = input("folder: ")
+    phase = input("phase: ")
+    train(FC(), "data/rawdata" + folder + "/data" + phase + ".txt")

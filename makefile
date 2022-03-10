@@ -14,12 +14,12 @@ else
 endif
 
 ifndef o
-	output = $@.exe
+	output = $@
 else
-	output = $(o).exe
+	output = $(o)
 endif
 
-all: $(objects) cui.o
+wincon: $(objects) cui.o
 	$(CXX) $(objects) cui.o src/main.cpp $(CXXFLAGS) -o bwcore1.5.exe
 
 online: $(objects)

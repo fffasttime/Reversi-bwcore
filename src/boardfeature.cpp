@@ -123,4 +123,8 @@ int get_feature(u64 b0, u64 b1, int do_tf, long long *features){
     return gen_nnue_input(board, features);
 }
 
+int get_emptys(u64 b0, u64 b1){
+    return popcnt(Board(b0, b1).emptys());
+}
+
 }

@@ -2,7 +2,7 @@
 
 A simple but relative strong Reversi(Othello) bot running on [botzone.org](https://botzone.org)
 
-version: 1.5.2
+version: 1.6.0 - Under development
 
 For detail rule and introduction of the game, see [https://en.wikipedia.org/wiki/Reversi](https://en.wikipedia.org/wiki/Reversi).
 
@@ -26,13 +26,13 @@ For detail rule and introduction of the game, see [https://en.wikipedia.org/wiki
 
 * Generate botzone single file program
 
-  Run `make botzone` , it will call `tools/merge.py` to merge useful source files in  `/src` into botzone.cpp, and try to build it.
+  Run `make botzone` , then `tools/merge.py` will merge useful source files in  `/src` into botzone.cpp, and try to build it.
 
-  `make online` will build same program, but it is built by multiple files. 
+  `make online` will build same program by multiple files. 
 
 * Run a simple console UI on Windows
 
-  Run `make` , then there will be a bwcore1.5.exe, it can run directly under cmd.exe, you can play game by clicking mouse. See `src/cui.cpp` if it can't display properly.
+  Run `make wincon` , then there will be a bwcore1.5.exe, it can run directly under cmd.exe, you can play game by clicking mouse. See `src/cui.cpp` if it can't display properly.
 
 * Run keyboard interaction mode
 

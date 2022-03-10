@@ -60,18 +60,20 @@ void gendata_endgame(ofstream &fout, int phase, int game_cnt){
             if (remain>=p_begin && remain<=p_end && i%(p_end-p_begin+1)+p_begin==remain){
                 search_delta=0;
                 think_maxd=12;
+                debug_flag |= 64; // disable MPC
                 think_choice(game.board);
+                debug_flag &= ~64; // enable MPC
                 int val=searchstat.maxv;
                 fout<<game.board.repr()<<' '<<val<<'\n';
                 fout.flush();
                 break;
             }
             think_maxd=5; 
-            search_delta=5+game.step/2;
-            // [0, n//20] all stronger
-            // [n//20, n//10] one side stronger
-            if (i<game_cnt/10 && game.col==i%2) search_delta/=4;
-            if (i<game_cnt/20 && game.col+1==i%2) search_delta/=4;
+            search_delta=rand()%3+4+std::max(0, std::min(25,25-(remain-p_begin)));
+            // [0, n//7] all stronger
+            // [n//7, n//5] one side stronger
+            if (i<game_cnt/5 && game.col==i%2) search_delta/=2;
+            if (i<game_cnt/7 && game.col+1==i%2) search_delta/=2;
             game.makemove(think_choice(game.board));
         }
         if (i%10==0) std::cout<<i<<' ';
@@ -98,7 +100,9 @@ void gendata_midgame(ofstream &fout, int phase, int game_cnt){
                 }
                 search_delta=0;
                 think_maxd=12;
+                debug_flag |= 64; // disable MPC
                 think_choice(game.board);
+                debug_flag &= ~64; // enable MPC
                 val=searchstat.maxv;
                 if (game.col!=bccol) val=-val;
                 fout<<bcur.repr()<<' '<<val<<'\n';
@@ -106,11 +110,11 @@ void gendata_midgame(ofstream &fout, int phase, int game_cnt){
                 fail: break;
             }
             think_maxd=5;
-            search_delta=5+game.step/2;
-            // [0, n//20] all stronger
-            // [n//20, n//10] one side stronger
-            if (i<game_cnt/10 && game.col==i%2) search_delta/=4;
-            if (i<game_cnt/20 && game.col+1==i%2) search_delta/=4;
+            search_delta=rand()%3+4+std::max(0, std::min(25, 25-(remain-p_begin)));
+            // [0, n//7] all stronger
+            // [n//7, n//5] one side stronger
+            if (i<game_cnt/5 && game.col==i%2) search_delta/=2;
+            if (i<game_cnt/7 && game.col+1==i%2) search_delta/=2;
             game.makemove(think_choice(game.board));
         }
         if (i%10==0) std::cout<<i<<' ';
