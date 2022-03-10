@@ -69,11 +69,11 @@ void gendata_endgame(ofstream &fout, int phase, int game_cnt){
                 break;
             }
             think_maxd=5; 
-            search_delta=rand()%3+4+std::max(0, std::min(25,25-(remain-p_begin)));
+            search_delta=rand()%3+4+std::max(0, std::min(25,25-(remain-p_begin)))/1.5;
             // [0, n//7] all stronger
             // [n//7, n//5] one side stronger
-            if (i<game_cnt/5 && game.col==i%2) search_delta/=2;
-            if (i<game_cnt/7 && game.col+1==i%2) search_delta/=2;
+            if (i<game_cnt/5 && game.col==i%2) search_delta/=3;
+            if (i<game_cnt/7 && (!game.col)==i%2) search_delta/=3;
             game.makemove(think_choice(game.board));
         }
         if (i%10==0) std::cout<<i<<' ';
@@ -110,11 +110,11 @@ void gendata_midgame(ofstream &fout, int phase, int game_cnt){
                 fail: break;
             }
             think_maxd=5;
-            search_delta=rand()%3+4+std::max(0, std::min(25, 25-(remain-p_begin)));
+            search_delta=rand()%3+4+std::max(0, std::min(25,25-(remain-p_begin)))/1.5;
             // [0, n//7] all stronger
             // [n//7, n//5] one side stronger
-            if (i<game_cnt/5 && game.col==i%2) search_delta/=2;
-            if (i<game_cnt/7 && game.col+1==i%2) search_delta/=2;
+            if (i<game_cnt/5 && game.col==i%2) search_delta/=3;
+            if (i<game_cnt/7 && (!game.col)==i%2) search_delta/=3;
             game.makemove(think_choice(game.board));
         }
         if (i%10==0) std::cout<<i<<' ';

@@ -135,9 +135,9 @@ def test(net, testdata):
     testloader=DataLoader(testdata, batch_size=64, shuffle=False)
     
     for xvalue, xboard, value, dv in testloader:
-        xvalue, xboard, vaule = xvalue.to(device), xboard.to(device), value.to(device)
+        xvalue, xboard, value = xvalue.to(device), xboard.to(device), value.to(device)
         v=net(xvalue, xboard)
-        sum_mse+=torch.sum((value-v)**2)
+        sum_mse+=torch.sum((value-v)**2).data
         sum_mae+=torch.sum((value-v).abs()).data
         batch_acc=torch.sum(torch.sign(value+0.5)==torch.sign(v+0.5))
         accurancy+=batch_acc
@@ -172,7 +172,7 @@ def train(net: Module, datafile):
         net.train()
         for xvalue, xboard, value, dv in loader:
             optimizer.zero_grad()
-            xvalue, xboard, vaule = xvalue.to(device), xboard.to(device), value.to(device)
+            xvalue, xboard, value = xvalue.to(device), xboard.to(device), value.to(device)
             v=net(xvalue, xboard)
             mse = (value-v)**2
             mae = (value-v).abs()
