@@ -243,6 +243,19 @@ void runDebugMode(){
                 printf("%s\n", debugout.str().c_str());
             }
         }
+        else if (cmd=="pp"){
+            if (game.isend()) puts("no move");
+            else{
+                int p;
+                if (game.col==0) 
+                    p=think_choice(game.board);
+                else
+                    p=think_choice_mc(game.board);
+                game.makemove(p);
+                if (echo) displayGame();
+                printf("%s\n", debugout.str().c_str());
+            }
+        }
         else if (cmd=="fl" || cmd=="flag"){
             std::cin>>std::dec>>debug_flag;
         }

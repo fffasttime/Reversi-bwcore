@@ -4,12 +4,15 @@
 #include <algorithm>
 #include <sstream>
 #include <iomanip>
+#include <iostream>
 #include <setjmp.h>
 #include <chrono>
 #include <thread>
 #include <mutex>
 #include <fstream>
 #include <cstring>
+#include <cmath>
+#include <iostream>
 
 u64 debug_flag;
 SearchStat searchstat, searchstat_sum;
@@ -352,6 +355,114 @@ void search_id(CBoard board, int maxd){
     debugout<<"st:"<<searchstat_sum.tl<<"  sc:"<<searchstat_sum.leafcnt<<'\n';
 }
 
+Val rescale(Val x){
+    if (x>0) return sqrt(x);
+    return -sqrt(-x);
+}
+
+Val evalMCTS(CBoard cboard){
+    if (!cboard.genmove()){
+        return rescale(eval_end(cboard));
+    }
+    int empty = popcnt(cboard.emptys());
+    if (empty<=5) return search_end<5>(cboard, -INF, INF, 0);
+    return rescale(evalMidGame(cboard));
+}
+
+void MCTS::search_root(CBoard board){
+    trcnt = 0;
+    int MAX_PLAYOUT = 20000;
+    MCTSNode *root = node;
+    root->val = evalMCTS(board);
+    root->cnt = 1;
+    root->fa = nullptr;
+    root->firstchild = nullptr;
+    root->player = 0;
+    root->board = board;
+    searchstat.reset(MAX_PLAYOUT);
+
+    for (int p=0;p<MAX_PLAYOUT;p++){
+        backprop(expand(tree_policy(root)));
+    }
+
+    int maxmove, maxn=0;
+    debugout<<"br:[";
+    for (auto p=root->firstchild; p; p=p->next){
+        debugout<<'<'<<p->move/8<<','<<p->move%8<<">:"<<std::fixed<<std::setprecision(2)<<-p->val/p->cnt<<' '<<p->cnt<<',';
+        if (p->cnt>maxn) 
+            maxmove = p->move, maxn = p->cnt;
+    }
+    debugout<<"]";
+    searchstat.pv.clear();
+    searchstat.pv.emplace_back(maxmove, maxn);
+}
+
+std::pair<MCTSNode*, int> MCTS::tree_policy(MCTSNode *cur){
+    float mv=-INF;
+    MCTSNode* ch=nullptr;
+    u64 expanded = 0;
+
+    const Val C_UCT = 6.0;
+
+    for (auto p=cur->firstchild;p;p=p->next){
+        Val val=p->val/p->cnt;
+        bts(expanded, p->move);
+        Val uct = -val + C_UCT * sqrt(log(cur->cnt)/(p->cnt+1));
+        //std::cout<<"in "<<val<<" "<<uct<<'\n';
+        if (uct>mv)
+            mv=uct, ch=p;
+    }
+    int ich=-1;
+    auto moves = cur->board.genmove();
+    for (auto up: u64iter(moves ^ expanded)){
+        Val val=rescale(evalMCTS(cur->board.cmakemove_r(up)));
+        Val uct = -val + C_UCT * sqrt(log(cur->cnt));
+        if (uct>mv)
+            mv=uct, ich=up;
+        //std::cout<<"out "<<-val<<" "<<uct<<'\n';
+    }
+    if (ich!=-1 || mv==-INF) return {cur, ich};
+    return tree_policy(ch);
+}
+
+MCTSNode MCTS::node[1<<20];
+MCTS mcts;
+
+std::pair<MCTSNode *, Val> MCTS::expand(std::pair<MCTSNode*, int> to_expand){
+    auto [cur, new_move] = to_expand;
+    //std::cout<<cur->board.repr()<<' '<<new_move<<'\n';
+    if (new_move==-1) return {cur, eval_end(cur->board)};
+    const Board &cboard=cur->board;
+    MCTSNode *ch=node + (++trcnt);
+    ch->val=0; ch->cnt=0;
+    ch->firstchild=nullptr;
+    ch->next=cur->firstchild;
+    ch->move=new_move;
+    ch->fa=cur;
+    cur->firstchild = ch;
+    ch->board = cboard.cmakemove_r(new_move);
+    if (!ch->board.genmove()){
+        ch->board.cswap();
+        ch->player=cur->player;
+    }
+    else ch->player = !cur->player;
+    return {ch, evalMCTS(ch->board)};
+}
+
+void MCTS::backprop(std::pair<MCTSNode *, Val> to_backprop){
+    auto [cur, val] = to_backprop;
+    bool player = cur->player;
+    while (cur){
+        //std::cout<<"bp "<<val<<" "<<(cur->player==player)<<"\n";
+        cur->cnt++;
+        if (cur->player == player)
+            cur->val+=val;
+        else
+            cur->val-=val;
+        cur=cur->fa;
+    }
+}
+
 #ifndef ONLINE
 int think_maxd=11;
 
@@ -372,6 +483,16 @@ int think_choice(CBoard board){
     else
         search_id(board, think_maxd); // id+hash is faster most of the time
         //search_root(think_maxd, board, -1);
+        
+    return searchstat.pv[rand()%searchstat.pv.size()].first;
+}
+int think_choice_mc(CBoard board){
+    debugout.str("");
+    if (popcnt(board.emptys())<=12)
+        search_exact_root(board);
+    else
+        mcts.search_root(board);
+        
     return searchstat.pv[rand()%searchstat.pv.size()].first;
 }
 #endif //ONLINE

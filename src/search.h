@@ -55,6 +55,28 @@ struct SearchStat{
     std::string str();
 };
 
+struct MCTSNode{
+    Board board;
+    Val val;
+    int cnt, move;
+    bool player;
+    MCTSNode *fa;
+    MCTSNode *firstchild;
+    MCTSNode *next;
+};
+
+class MCTS{
+private:
+    int trcnt;
+    static MCTSNode node[1<<20];
+
+public:
+    void search_root(CBoard board);
+    std::pair<MCTSNode*, int> tree_policy(MCTSNode *cur);
+    std::pair<MCTSNode *, Val> expand(std::pair<MCTSNode*, int> to_expand);
+    void backprop(std::pair<MCTSNode *, Val> to_backprop);
+};
+
 int search_root(int depth, CBoard cboard, int suggestp=-1);
 Val search_normal(int depth, CBoard cboard, Val alpha, Val beta, bool pass=0);
 
@@ -67,6 +89,7 @@ extern std::ostringstream debugout;
 Val search_exact(int depth, CBoard cboard, Val alpha, Val beta, bool pass=0);
 int random_choice(CBoard board);
 int think_choice(CBoard board);
+int think_choice_mc(CBoard board);
 int think_choice_td(CBoard board);
 void loadPCData();
 
