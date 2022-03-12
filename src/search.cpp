@@ -134,6 +134,7 @@ Val search_normal1(int depth, CBoard cboard, Val alpha, Val beta, bool pass=0){
     return val;
 }
 
+Val PC_CONSTANT = 1.4f;
 struct PC_Param{
     Val w, b, sigma;
 }pc_param[64][MPC_MAXD+1];
@@ -151,7 +152,6 @@ int pc_statecnt[64][15];
 #endif //GENDATA_PC
 // #define USE_PC
 Val probcut(int depth, CBoard cboard, Val alpha, Val beta){
-    const Val t=1.4;
     Val bound, ret;
     int cnt=popcnt(cboard.occupys());
 #ifdef GENDATA_PC
@@ -163,10 +163,10 @@ Val probcut(int depth, CBoard cboard, Val alpha, Val beta){
 #endif //GENDATA_PC
     PC_Param &pa=pc_param[cnt][depth];
     if (pa.sigma>50) return (alpha+beta)/2; // no data
-    bound=(t*pa.sigma+beta-pa.b)/pa.w;
+    bound=(PC_CONSTANT*pa.sigma+beta-pa.b)/pa.w;
     ret=search_normal(pc_depth[depth],cboard, bound-0.01, bound);
     if (ret>=bound) return beta;
-    bound=(-t*pa.sigma+alpha-pa.b)/pa.w;
+    bound=(-PC_CONSTANT*pa.sigma+alpha-pa.b)/pa.w;
     ret=search_normal(pc_depth[depth],cboard, bound, bound+0.01);
     if (ret<bound) return alpha;
     return (alpha+beta)/2;
@@ -376,8 +376,8 @@ int think_choice(CBoard board){
 }
 #endif //ONLINE
 
-int think_checktime=330, think_maxtime=910;
-//int think_checktime=100, think_maxtime=300;
+//int think_checktime=330, think_maxtime=910;
+int think_checktime=100, think_maxtime=300;
 
 int think_choice_td(CBoard board){
     debugout.str("");

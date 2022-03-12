@@ -62,9 +62,9 @@ void writePtnData(){
     fclose(out);
 }
 
-void loadData(){
+void loadData(bool test=0){
     string filename="data/"+folder+"/data"+
-        std::to_string(p_begins[phase])+"_"+std::to_string(p_ends[phase])+".txt";
+        std::to_string(p_begins[phase])+"_"+std::to_string(p_ends[phase])+(test?"_old":"")+".txt";
     std::ifstream fin(filename);
     if (!fin.is_open()){
         cout<<"file "<<filename<<" doesn't exist\n";
@@ -73,7 +73,10 @@ void loadData(){
     Board b; double val;
     while (fin>>std::hex>>b.b[0]>>b.b[1]){
         fin>>val;
-        data.emplace_back(b, val);
+        if (test)
+            data_test.emplace_back(b, val);
+        else
+            data.emplace_back(b, val);
     }
 }
 double sigmoid(double x){
@@ -458,9 +461,14 @@ void train_op(){
     cout<<data.size()<<" boards loaded\n";
     std::shuffle(data.begin(),data.end(),rng);
     int test_size=data.size()/20;
-    fprintf(flog, "%d board (%d train, %d test)\n", (int)data.size(), (int)data.size()-test_size, test_size);
-    data_test.insert(data_test.end(), data.end()-test_size, data.end());
-    data.erase(data.end()-test_size, data.end());
+    if (1){
+        data_test.insert(data_test.end(), data.end()-test_size, data.end());
+        data.erase(data.end()-test_size, data.end());
+    }
+    else{
+        loadData(true); // load test data
+    }
+    fprintf(flog, "%d board (%d train, %d test)\n", (int)data.size(), (int)data.size(), (int)data_test.size());
 
     train();
     analyze();
@@ -509,7 +517,8 @@ wb|wodd|wmob|wcdege|wedgeodd|wcinner(65)|e1|c52|c33|e2|e3|e4|k8|k7|k6|k5|k4|ccor
 	ws(sizeof(plen)/sizeof(short)); 
 	for (short x:plen) ws(x);
 
-    checksum=0;
+    checksum=0; // start checksum here
+
     for (int i=merge_begin;i<=merge_end;i++){
         short x; readShort(in[i], x);
         for (int j=0;j<datapack_len;j++){
@@ -533,6 +542,107 @@ wb|wodd|wmob|wcdege|wedgeodd|wcinner(65)|e1|c52|c33|e2|e3|e4|k8|k7|k6|k5|k4|ccor
 	fclose(out);
 }
 
+// concat tail of old coeff to new coeff
+void concat(){
+    const short format_version=1;
+    const char *data_desc="bwcore1.5 linreg, + wcedge wcinner ccor cx22\n\
+wb|wodd|wmob|wcdege|wedgeodd|wcinner(65)|e1|c52|c33|e2|e3|e4|k8|k7|k6|k5|k4|ccor|cx22\n";
+    const short plen[]=
+    {0,0,0,0,0,65,10,10,9,8,8,8,8,7,6,5,4,4,4};
+    cout<<"folder: "; cin>>folder;
+    string folder_old;
+    cout<<"folder_old: "; cin>>folder_old;
+
+    int datapack_len=0;
+    for (auto x:plen) if (x<=10) datapack_len+=pow3[x]; else datapack_len+=x;
+    cout<<"datapack len: "<<datapack_len<<'\n';
+
+    int merge_begin=1, merge_end;
+    cout<<"merge_begin="<<merge_begin<<'\n';
+    cout<<"merge_end(default 10): "; cin>>merge_end;
+
+    FILE *in[11], *out;
+    for (int i=merge_begin; i<=merge_end;i++){
+        string filename=string("data/")+folder+"/coeff"+
+            std::to_string(p_begins[i])+"_"+std::to_string(p_ends[i])+".bin";
+        in[i]=fopen(filename.c_str(),"rb");
+        cout<<"open phase "<<i<<": "<<filename<<" ";
+        if(!in[i]){
+            cout<<"FAIL\n";
+            exit(1);
+        }
+        else cout<<"ok\n";
+    }
+    string filename=string("data/")+folder+"/reversicoeff.bin";
+    out=fopen(filename.c_str(), "wb");
+    cout<<"save to "<<filename<<"\n";
+
+    filename=string("data/")+folder_old+"/reversicoeff.bin";
+    FILE *old_in = fopen(filename.c_str(), "rb");
+    
+    short old_version; readShort(old_in, old_version);
+    short part_cnt; readShort(old_in, part_cnt);
+    cout<<"old version="<<old_version<<" part_cnt="<<part_cnt<<'\n';
+    short type_cnt; readShort(old_in, type_cnt);
+    cout<<"old type: ";
+    short _; inc(i, type_cnt)  readShort(old_in, _), cout<<_<<" "; cout<<'\n';
+
+    short checksum;
+    auto ws=[&](short x){fwrite(&x, 2, 1, out); checksum^=x;};
+    
+    ws(format_version);
+	ws(part_cnt-merge_begin+1); // part count
+	ws(sizeof(plen)/sizeof(short)); 
+	for (short x:plen) ws(x);
+    checksum = 0; // start checksum here
+
+    for (int i=merge_begin;i<=merge_end;i++){
+        short x; readShort(in[i], x);
+        for (int j=0;j<datapack_len;j++){
+            ws(x);
+            if (feof(in[i])) {cout<<"Fail: detected early EOF when read phase "<<i
+                <<", pointer at "<<j<<'\n'; exit(1);}
+            readShort(in[i], x);
+        }
+        if (!feof(in[i])) {cout<<"Fail: expected EOF when read phase "<<i<<'\n'; exit(1);}
+        fclose(in[i]);
+    }
+
+    short old_checksum=0;
+
+    for (int i=merge_begin;i<=merge_end;i++){
+        short x;
+        for (int j=0;j<datapack_len;j++){
+            readShort(old_in, x), old_checksum^=x;
+        }
+    }
+
+    for (int i=merge_end+1;i<=part_cnt;i++){
+        short x;
+        for (int j=0;j<datapack_len;j++){
+            readShort(old_in, x), old_checksum^=x;
+            ws(x);
+        }
+    }
+
+    short x;
+    readShort(old_in, x);
+    cout<<"calc checksum="<<old_checksum<<" read checksum="<<x<<'\n';
+    if (x!=old_checksum) cout<<"old checksum check failed!\n";
+
+    cout<<"checksum="<<checksum<<'\n';
+    ws(checksum);
+    ws(strlen(data_desc)+1);
+    
+	fwrite(data_desc, strlen(data_desc)+1, 1, out);
+    
+	long long t=time(NULL);
+	fwrite(&t, sizeof t, 1, out);
+	printf("timestamp: %lld\n",t);
+	
+	fclose(out);
+}
+
 int main(int argc, char **argv){
     initPtnConfig();
     if (argc==1){
@@ -540,8 +650,12 @@ int main(int argc, char **argv){
         train_op();
     }
     else if (argc==2){
-        if (string(argv[1])=="merge")
+        if (string(argv[1])=="merge"){
             mergedata();
+        }
+        else if (string(argv[1])=="concat"){
+            concat();
+        }
         else{
             folder=argv[1];
             train_op();

@@ -312,6 +312,9 @@ void runDebugMode(){
             game.reset();
             if (echo) displayGame();
         }
+        else if (cmd=="pcconst"){
+            std::cin>>PC_CONSTANT;
+        }
         else{
             puts("unknown command");
         }

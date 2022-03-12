@@ -63,6 +63,7 @@ constexpr int MPC_MAXD=14;
 #ifndef ONLINE
 extern u64 debug_flag;
 extern std::ostringstream debugout;
+extern Val PC_CONSTANT;
 
 Val search_exact(int depth, CBoard cboard, Val alpha, Val beta, bool pass=0);
 int random_choice(CBoard board);

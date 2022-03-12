@@ -69,7 +69,7 @@ void gendata_endgame(ofstream &fout, int phase, int game_cnt){
                 break;
             }
             think_maxd=5; 
-            search_delta=rand()%3+4+std::max(0, std::min(25,25-(remain-p_begin)))/1.5;
+            search_delta=rand()%3+4+std::max(0, std::min(25,25-(remain-p_begin)))/2;
             // [0, n//7] all stronger
             // [n//7, n//5] one side stronger
             if (i<game_cnt/5 && game.col==i%2) search_delta/=3;
@@ -89,7 +89,7 @@ void gendata_midgame(ofstream &fout, int phase, int game_cnt){
             int remain=popcnt(game.board.emptys());
             if (remain>=p_begin && remain<=p_end && i%(p_end-p_begin+1)+p_begin==remain){
                 search_delta=0.15;
-                think_maxd=9;
+                think_maxd=9; PC_CONSTANT=2.2;
                 if (phase>5) think_maxd=8;
                 Board bcur=game.board; int bccol=game.col;
                 int val;
@@ -110,7 +110,7 @@ void gendata_midgame(ofstream &fout, int phase, int game_cnt){
                 fail: break;
             }
             think_maxd=5;
-            search_delta=rand()%3+4+std::max(0, std::min(25,25-(remain-p_begin)))/1.5;
+            search_delta=rand()%3+4+std::max(0, std::min(25,25-(remain-p_begin)))/2;
             // [0, n//7] all stronger
             // [n//7, n//5] one side stronger
             if (i<game_cnt/5 && game.col==i%2) search_delta/=3;
@@ -156,6 +156,7 @@ int main(int argc, char **argv){
     gendata_PC();
     remakedata_PC();
 #else
+    loadPCData();
     gendata(argc, argv);
 #endif
     return 0;

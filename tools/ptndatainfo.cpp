@@ -32,15 +32,19 @@ void loadPtnData(){
     printf("typecnt: %d\n", type_cnt);
     short plen[20];
     inc(i,type_cnt)  readShort(in, plen[i]), printf("%d ", plen[i]); puts("");
+    int datapack_len = 0;
+    inc(i,type_cnt) datapack_len += (plen[i]>10?plen[i]:pow3[plen[i]]);
+    printf("datapack_len: %d\n", datapack_len);
     unsigned short checksum=0;
     auto rdc=[&](short &x){readShort(in, x); checksum^=x;};
-    inc(i,part_cnt)
+    inc(i,part_cnt){
         inc(k,type_cnt){
             short x; int len;
             if (plen[k]>10) len=plen[k];
             else len=pow3[plen[k]];
             inc(j, len) rdc(x); // load & check
         }
+    }
     short file_checksum; readShort(in, file_checksum);
     printf("checksum=%d,",(int)checksum);
     if (checksum!=file_checksum) printf("fail!\n");
