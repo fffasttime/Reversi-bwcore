@@ -335,7 +335,7 @@ void train(){
     const int train_steps=50000;
     const int lr_decay_st=20000;
     double lr_max=0.2, lr_min=0.03;
-    cout<<"lr_max(default 0.2): "; cin>>lr_max;
+    cout<<"lr_max: "<<lr_max;
     fprintf(flog, "batch=%d lr_decay_st=%d lr_max=%f lr_min=%f\n", train_steps, lr_decay_st, lr_max, lr_min);
     inc(i, train_steps){
         if (i<1000) lr=lr_min; //warming up
@@ -450,8 +450,11 @@ void analyze(){
 #endif
 }
 
-void train_op(){
-    cout<< "phase: "; cin>>phase;
+void train_op(int argc, char **argv){
+    if (argc==3)
+        phase = atoi(argv[2]);
+    else
+        cout<< "phase: ", cin>>phase;
     loadData();
     flog=fopen((string("data/")+folder+"/trainlog.log").c_str(),"a");
     fputs("+ pcinner pcedge ccor cx22\n", flog);
@@ -543,15 +546,21 @@ wb|wodd|wmob|wcdege|wedgeodd|wcinner(65)|e1|c52|c33|e2|e3|e4|k8|k7|k6|k5|k4|ccor
 }
 
 // concat tail of old coeff to new coeff
-void concat(){
+void concat(int argc, char **argv){
     const short format_version=1;
     const char *data_desc="bwcore1.5 linreg, + wcedge wcinner ccor cx22\n\
 wb|wodd|wmob|wcdege|wedgeodd|wcinner(65)|e1|c52|c33|e2|e3|e4|k8|k7|k6|k5|k4|ccor|cx22\n";
     const short plen[]=
     {0,0,0,0,0,65,10,10,9,8,8,8,8,7,6,5,4,4,4};
-    cout<<"folder: "; cin>>folder;
+    if (argc>=3)
+        folder = argv[2], cout<<"folder: "<< folder;
+    else
+        cout<<"folder: ", cin>>folder;
     string folder_old;
-    cout<<"folder_old: "; cin>>folder_old;
+    if (argc>=4)
+        folder_old = argv[3], cout<<"folder_old: "<< folder_old;
+    else
+        cout<<"folder_old: ", cin>>folder_old;
 
     int datapack_len=0;
     for (auto x:plen) if (x<=10) datapack_len+=pow3[x]; else datapack_len+=x;
@@ -559,7 +568,11 @@ wb|wodd|wmob|wcdege|wedgeodd|wcinner(65)|e1|c52|c33|e2|e3|e4|k8|k7|k6|k5|k4|ccor
 
     int merge_begin=1, merge_end;
     cout<<"merge_begin="<<merge_begin<<'\n';
-    cout<<"merge_end(default 10): "; cin>>merge_end;
+
+    if (argc>=5)
+        merge_end = atoi(argv[4]), cout<<"merge_end="<<merge_end<<'\n';
+    else
+        cout<<"merge_end(default 10): ", cin>>merge_end;
 
     FILE *in[11], *out;
     for (int i=merge_begin; i<=merge_end;i++){
@@ -647,18 +660,18 @@ int main(int argc, char **argv){
     initPtnConfig();
     if (argc==1){
         folder="rawdata1";
-        train_op();
+        train_op(argc, argv);
     }
-    else if (argc==2){
+    else if (argc>=2){
         if (string(argv[1])=="merge"){
             mergedata();
         }
         else if (string(argv[1])=="concat"){
-            concat();
+            concat(argc, argv);
         }
         else{
             folder=argv[1];
-            train_op();
+            train_op(argc, argv);
         }
     }
     return 0;

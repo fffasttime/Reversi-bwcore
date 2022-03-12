@@ -76,7 +76,7 @@ void gendata_endgame(ofstream &fout, int phase, int game_cnt){
             if (i<game_cnt/7 && (!game.col)==i%2) search_delta/=3;
             game.makemove(think_choice(game.board));
         }
-        if (i%10==0) std::cout<<i<<' ';
+        if (i%100==0) std::cout<<i<<' ', fflush(stdout);
     }
 }
 
@@ -117,7 +117,7 @@ void gendata_midgame(ofstream &fout, int phase, int game_cnt){
             if (i<game_cnt/7 && (!game.col)==i%2) search_delta/=3;
             game.makemove(think_choice(game.board));
         }
-        if (i%10==0) std::cout<<i<<' ';
+        if (i%100==0) std::cout<<i<<' ', fflush(stdout);
     }
 }
 
